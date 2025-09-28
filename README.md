@@ -5,7 +5,7 @@ A tool for working with UCAN 1.0 tokens.
 ## Install
 
 ```sh
-go install https://github.com/alanshaw/ucantool
+go install github.com/alanshaw/ucantool
 ```
 
 ## Contributing
