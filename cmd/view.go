@@ -235,6 +235,7 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 	if inv.Cause() != nil {
 		table.Append([]string{"Cause", inv.Cause().String()})
 	}
+	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(inv.Signature().Bytes(), 80)})
 
 	table.Render()
 	return tableString.String()
@@ -274,6 +275,7 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 	} else {
 		table.Append([]string{"Expiration", "NULL"})
 	}
+	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(dlg.Signature().Bytes(), 80)})
 
 	table.Render()
 	return tableString.String()
