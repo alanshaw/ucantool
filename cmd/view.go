@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -15,8 +16,13 @@ import (
 	"github.com/alanshaw/ucantone/ucan/container"
 	cdm "github.com/alanshaw/ucantone/ucan/container/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation"
+	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/ipfs/go-cid"
+	"github.com/ipld/go-ipld-prime"
+	"github.com/ipld/go-ipld-prime/codec/dagcbor"
+	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/multiformats/go-multicodec"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -25,6 +31,7 @@ import (
 var (
 	// View command flags
 	containerIndex int
+	formatJSON     bool
 )
 
 var viewCmd = &cobra.Command{
@@ -44,6 +51,7 @@ func init() {
 	rootCmd.AddCommand(viewCmd)
 
 	viewCmd.Flags().IntVarP(&containerIndex, "container-index", "i", -1, "If input is a UCAN container, view the data at this index.")
+	viewCmd.Flags().BoolVarP(&formatJSON, "json", "j", false, "Format output as DAG-JSON.")
 }
 
 // view reads a delegation from a file or stdin and displays its information
@@ -95,7 +103,15 @@ func view(cmd *cobra.Command, args []string) error {
 			if err != nil {
 				return fmt.Errorf("hashing data: %w", err)
 			}
-			cmd.Println(formatContainerAsTable(link, ucanBytes[0], ct.Model()))
+			if formatJSON {
+				out, err := cborToJSON(rawContainerBytes[1:])
+				if err != nil {
+					return err
+				}
+				cmd.Println(out)
+			} else {
+				cmd.Println(formatContainerAsTable(link, ucanBytes[0], ct.Model()))
+			}
 			return nil
 		}
 
@@ -104,6 +120,15 @@ func view(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("container index out of range, requested %d, but there are only %d items", containerIndex, len(ct.Model().Ctn1))
 		}
 		ucanBytes = ct.Model().Ctn1[containerIndex]
+	}
+
+	if formatJSON {
+		out, err := cborToJSON(ucanBytes)
+		if err != nil {
+			return err
+		}
+		cmd.Println(out)
+		return nil
 	}
 
 	inv, err := invocation.Decode(ucanBytes)
@@ -153,7 +178,7 @@ func formatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel)
 
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Codec", fmt.Sprintf("0x%02x (%s)", codec, container.FormatCodec(codec))})
-	table.Append([]string{"Tag", "ctn-v1"})
+	table.Append([]string{"Tag", cdm.Tag})
 
 	// data := []string{"["}
 	// for _, v := range model.Ctn1 {
@@ -174,7 +199,7 @@ func formatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel)
 		dataTableWriter.Append([]string{fmt.Sprintf("%d ", i), hex.Dump(v)})
 	}
 	dataTableWriter.Render()
-	table.Append([]string{"Data", dataTableString.String()})
+	table.Append([]string{"Contents", dataTableString.String()})
 	table.Render()
 	return tableString.String()
 }
@@ -199,6 +224,7 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 	table.SetColWidth(120)
 
 	table.Append([]string{"/", link.String()})
+	table.Append([]string{"Tag", idm.Tag})
 	table.Append([]string{"Issuer", inv.Issuer().DID().String()})
 	table.Append([]string{"Subject", inv.Subject().DID().String()})
 	if inv.Audience() != nil {
@@ -253,6 +279,7 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 	table.SetColWidth(120)
 
 	table.Append([]string{"/", link.String()})
+	table.Append([]string{"Tag", ddm.Tag})
 	table.Append([]string{"Issuer", dlg.Issuer().DID().String()})
 	table.Append([]string{"Audience", dlg.Audience().DID().String()})
 	if dlg.Subject() != nil {
@@ -283,4 +310,26 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 
 	table.Render()
 	return tableString.String()
+}
+
+func cborToJSON(cbor []byte) (string, error) {
+	n, err := ipld.Decode(cbor, dagcbor.Decode)
+	if err != nil {
+		return "", fmt.Errorf("decoding dag-cbor: %w", err)
+	}
+	var b bytes.Buffer
+	err = dagjson.Encode(n, &b)
+	if err != nil {
+		return "", fmt.Errorf("encoding to dag-json: %w", err)
+	}
+	var a any
+	err = json.Unmarshal(b.Bytes(), &a)
+	if err != nil {
+		return "", fmt.Errorf("unmarshaling JSON: %w", err)
+	}
+	out, err := json.MarshalIndent(a, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("marshaling JSON: %w", err)
+	}
+	return string(out), nil
 }
