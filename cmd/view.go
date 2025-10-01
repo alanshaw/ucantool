@@ -259,6 +259,10 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 		table.Append([]string{"Subject", dlg.Subject().DID().String()})
 	}
 	table.Append([]string{"Command", dlg.Command().String()})
+
+	jsonData, _ := json.MarshalIndent(dlg.Policy().Statements, "", "  ")
+	table.Append([]string{"Policy", string(jsonData)})
+
 	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(dlg.Nonce(), 80)})
 
 	if dlg.Metadata() != nil {

@@ -7,11 +7,12 @@ import (
 	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/principal/ed25519"
-	"github.com/alanshaw/ucantone/testing/helpers"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/delegation"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
@@ -22,39 +23,44 @@ func main() {
 	space := must(ed25519.Generate())
 	service := must(did.Parse("did:web:example.com"))
 
-	command := must(command.Parse("/test/invoke"))
-	arguments := must(datamodel.NewMapFromCBORMarshaler(
-		&helpers.TestArgs{
-			ID:    must(ed25519.Generate()).DID(),
-			Link:  must(cid.Parse("bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy")),
-			Str:   "test",
-			Num:   1000,
-			Bytes: []byte{1, 2, 3},
-			Obj: helpers.TestObject{
-				Bytes: []byte{4, 5, 6},
-			},
-			List: []string{"one", "two", "three"},
-		},
-	))
-
-	meta := datamodel.NewMap()
-	meta.SetValue("foo", "bar")
+	command := must(command.Parse("/fruits/purchase"))
 
 	dlg := must(
 		delegation.Delegate(
 			space,
 			alice,
 			command,
+			delegation.WithPolicy(
+				policy.All(
+					must(selector.Parse(".fruits")),
+					policy.Or(
+						policy.Equal(must(selector.Parse(".")), "apple"),
+						policy.Equal(must(selector.Parse(".")), "orange"),
+						policy.Equal(must(selector.Parse(".")), "banana"),
+					),
+				),
+			),
 		),
 	)
-	dlgBytes := must(delegation.Encode(dlg))
+
+	arguments := must(datamodel.NewMap(datamodel.WithValue("fruits", []string{"apple", "banana"})))
+	meta := must(
+		datamodel.NewMap(datamodel.WithValues(map[string]any{
+			"id":   must(ed25519.Generate()).DID().String(),
+			"root": must(cid.Parse("bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy")),
+			"name": "test",
+			"size": int64(1000),
+			"blob": must(datamodel.NewMap(datamodel.WithValue("digest", []byte{1, 2, 3}))),
+		})),
+	)
+
 	prf := must(
 		cid.Prefix{
 			Version:  1,
 			Codec:    dagcbor.Code,
 			MhType:   multihash.SHA2_256,
 			MhLength: -1,
-		}.Sum(dlgBytes),
+		}.Sum(must(delegation.Encode(dlg))),
 	)
 
 	inv := must(
@@ -79,7 +85,7 @@ func main() {
 			container.WithInvocations(inv),
 		),
 	)
-	os.Stdout.Write(must(container.Encode(container.Base64Gzip, ct)))
+	os.Stdout.Write(must(container.Encode(container.Base64, ct)))
 }
 
 func must[T any](val T, err error) T {
