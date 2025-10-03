@@ -24,11 +24,10 @@ import (
 
 func main() {
 	alice := must(ed25519.Generate())
-	space := must(ed25519.Generate())
-	service := must(
+	market := must(
 		signer.Wrap(
 			must(ed25519.Generate()),
-			must(did.Parse("did:web:example.com")),
+			must(did.Parse("did:web:fruit.market")),
 		),
 	)
 
@@ -38,7 +37,7 @@ func main() {
 
 	dlg := must(
 		delegation.Delegate(
-			space,
+			market,
 			alice,
 			command,
 			delegation.WithPolicy(
@@ -81,10 +80,9 @@ func main() {
 	inv := must(
 		invocation.Invoke(
 			alice,
-			space,
+			market,
 			command,
 			arguments,
-			invocation.WithAudience(service),
 			invocation.WithProofs(prf),
 			invocation.WithMetadata(meta),
 			invocation.WithExpiration(ucan.Now()+30),
@@ -94,7 +92,7 @@ func main() {
 	// Execute ///////////////////////////////////////////////////////////////////
 
 	out := result.Ok[int64, any](42)
-	rcpt := must(receipt.Issue(service, inv.Task(), out))
+	rcpt := must(receipt.Issue(market, inv.Task(), out))
 
 	// Transport /////////////////////////////////////////////////////////////////
 
