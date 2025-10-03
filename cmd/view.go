@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alanshaw/ucantone/ipld/datamodel"
+	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
 	cdm "github.com/alanshaw/ucantone/ucan/container/datamodel"
@@ -19,6 +21,8 @@ import (
 	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
+	"github.com/alanshaw/ucantone/ucan/receipt"
+	rdm "github.com/alanshaw/ucantone/ucan/receipt/datamodel"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/codec/dagcbor"
@@ -131,33 +135,29 @@ func view(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	link, err := cid.V1Builder{
+		Codec:  uint64(multicodec.DagCbor),
+		MhType: uint64(multicodec.Sha2_256),
+	}.Sum(ucanBytes)
+	if err != nil {
+		return fmt.Errorf("hashing data: %w", err)
+	}
+
 	inv, err := invocation.Decode(ucanBytes)
 	if err == nil {
-		link, err := cid.Prefix{
-			Version:  1,
-			Codec:    uint64(multicodec.DagCbor),
-			MhType:   uint64(multicodec.Sha2_256),
-			MhLength: -1,
-		}.Sum(ucanBytes)
-		if err != nil {
-			return fmt.Errorf("hashing data: %w", err)
-		}
 		cmd.Println(formatInvocation(link, inv))
 		return nil
 	}
 
 	dlg, err := delegation.Decode(ucanBytes)
 	if err == nil {
-		link, err := cid.Prefix{
-			Version:  1,
-			Codec:    uint64(multicodec.DagCbor),
-			MhType:   uint64(multicodec.Sha2_256),
-			MhLength: -1,
-		}.Sum(ucanBytes)
-		if err != nil {
-			return fmt.Errorf("hashing data: %w", err)
-		}
 		cmd.Println(formatDelegation(link, dlg))
+		return nil
+	}
+
+	rcpt, err := receipt.Decode(ucanBytes)
+	if err == nil {
+		cmd.Println(formatReceipt(link, rcpt))
 		return nil
 	}
 
@@ -261,6 +261,8 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 	if inv.Cause() != nil {
 		table.Append([]string{"Cause", inv.Cause().String()})
 	}
+
+	table.Append([]string{"Task", inv.Task().String()})
 	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(inv.Signature().Bytes(), 80)})
 
 	table.Render()
@@ -307,6 +309,62 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 		table.Append([]string{"Expiration", "NULL"})
 	}
 	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(dlg.Signature().Bytes(), 80)})
+
+	table.Render()
+	return tableString.String()
+}
+
+func formatReceipt(link cid.Cid, rcpt ucan.Receipt) string {
+	tableString := &strings.Builder{}
+
+	table := tablewriter.NewWriter(tableString)
+	table.SetHeader([]string{"Property", "Value"})
+	table.SetAutoWrapText(false)
+	table.SetAutoMergeCells(false)
+	table.SetRowLine(true)
+	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
+	table.SetColWidth(120)
+
+	table.Append([]string{"/", link.String()})
+	table.Append([]string{"Tag", rdm.Tag})
+	table.Append([]string{"Executor", rcpt.Issuer().DID().String()})
+	table.Append([]string{"Command", rcpt.Command().String()})
+	table.Append([]string{"Ran", rcpt.Ran().String()})
+
+	out := datamodel.NewMap()
+	result.MatchResultR0(
+		rcpt.Out(),
+		func(o any) { out.Set("ok", o) },
+		func(x any) { out.Set("error", x) },
+	)
+
+	jsonData, _ := json.MarshalIndent(out, "", "  ")
+	table.Append([]string{"Out", string(jsonData)})
+
+	if len(rcpt.Proofs()) > 0 {
+		var prfs []string
+		for _, p := range rcpt.Proofs() {
+			prfs = append(prfs, p.String())
+		}
+		table.Append([]string{"Proofs", strings.Join(prfs, "\n")})
+	}
+
+	if rcpt.Metadata() != nil {
+		jsonData, _ := json.MarshalIndent(rcpt.Metadata(), "", "  ")
+		table.Append([]string{"Metadata", string(jsonData)})
+	}
+
+	if rcpt.Expiration() != nil {
+		table.Append([]string{"Expiration", time.Unix(int64(*rcpt.Expiration()), 0).UTC().Format(time.DateTime)})
+	} else {
+		table.Append([]string{"Expiration", "NULL"})
+	}
+
+	if rcpt.IssuedAt() != nil {
+		table.Append([]string{"Issued At", time.Unix(int64(*rcpt.IssuedAt()), 0).UTC().Format(time.DateTime)})
+	}
+
+	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(rcpt.Signature().Bytes(), 80)})
 
 	table.Render()
 	return tableString.String()

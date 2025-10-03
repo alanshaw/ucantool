@@ -2,10 +2,10 @@ module github.com/alanshaw/ucantool
 
 go 1.24.4
 
-replace github.com/alanshaw/ucantone => /Users/alan/Code/alanshaw/ucantone
+// replace github.com/alanshaw/ucantone => /Users/alan/Code/alanshaw/ucantone
 
 require (
-	github.com/alanshaw/ucantone v0.0.0-20250926104022-db5c26439029
+	github.com/alanshaw/ucantone v0.0.0-20251003130920-32de507cb840
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipld/go-ipld-prime v0.21.0
 	github.com/multiformats/go-multicodec v0.9.2
