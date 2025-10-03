@@ -226,6 +226,7 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Tag", idm.Tag})
 	table.Append([]string{"Issuer", inv.Issuer().DID().String()})
+	table.Append([]string{"Task", inv.Task().String()})
 	table.Append([]string{"Subject", inv.Subject().DID().String()})
 	if inv.Audience() != nil {
 		table.Append([]string{"Audience", inv.Audience().DID().String()})
@@ -262,8 +263,8 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 		table.Append([]string{"Cause", inv.Cause().String()})
 	}
 
-	table.Append([]string{"Task", inv.Task().String()})
 	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(inv.Signature().Bytes(), 80)})
+	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(inv.Nonce(), 80)})
 
 	table.Render()
 	return tableString.String()
@@ -292,8 +293,6 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 	jsonData, _ := json.MarshalIndent(dlg.Policy().Statements, "", "  ")
 	table.Append([]string{"Policy", string(jsonData)})
 
-	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(dlg.Nonce(), 80)})
-
 	if dlg.Metadata() != nil {
 		jsonData, _ := json.MarshalIndent(dlg.Metadata(), "", "  ")
 		table.Append([]string{"Metadata", string(jsonData)})
@@ -309,6 +308,7 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 		table.Append([]string{"Expiration", "NULL"})
 	}
 	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(dlg.Signature().Bytes(), 80)})
+	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(dlg.Nonce(), 80)})
 
 	table.Render()
 	return tableString.String()
@@ -365,6 +365,7 @@ func formatReceipt(link cid.Cid, rcpt ucan.Receipt) string {
 	}
 
 	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(rcpt.Signature().Bytes(), 80)})
+	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(rcpt.Nonce(), 80)})
 
 	table.Render()
 	return tableString.String()
