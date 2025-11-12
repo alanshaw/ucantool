@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/alanshaw/ucantone/did"
-	"github.com/alanshaw/ucantone/ipld/codec/dagcbor"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/principal/ed25519"
 	"github.com/alanshaw/ucantone/principal/signer"
@@ -14,12 +13,10 @@ import (
 	"github.com/alanshaw/ucantone/ucan/command"
 	"github.com/alanshaw/ucantone/ucan/container"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy"
-	"github.com/alanshaw/ucantone/ucan/delegation/policy/selector"
+	"github.com/alanshaw/ucantone/ucan/delegation/policy/builder"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	"github.com/alanshaw/ucantone/ucan/receipt"
 	"github.com/ipfs/go-cid"
-	"github.com/multiformats/go-multihash"
 )
 
 func main() {
@@ -35,21 +32,24 @@ func main() {
 
 	// Delegate //////////////////////////////////////////////////////////////////
 
+	pol := must(builder.Build(
+		builder.All(
+			".fruits",
+			builder.Or(
+				builder.Equal(".", "apple"),
+				builder.Equal(".", "orange"),
+				builder.Equal(".", "banana"),
+			),
+		),
+	))
+
 	dlg := must(
 		delegation.Delegate(
 			market,
 			alice,
 			command,
-			delegation.WithPolicy(
-				policy.All(
-					must(selector.Parse(".fruits")),
-					policy.Or(
-						policy.Equal(must(selector.Parse(".")), "apple"),
-						policy.Equal(must(selector.Parse(".")), "orange"),
-						policy.Equal(must(selector.Parse(".")), "banana"),
-					),
-				),
-			),
+			delegation.WithSubject(market),
+			delegation.WithPolicy(pol),
 		),
 	)
 
@@ -68,22 +68,13 @@ func main() {
 		),
 	)
 
-	prf := must(
-		cid.Prefix{
-			Version:  1,
-			Codec:    dagcbor.Code,
-			MhType:   multihash.SHA2_256,
-			MhLength: -1,
-		}.Sum(must(delegation.Encode(dlg))),
-	)
-
 	inv := must(
 		invocation.Invoke(
 			alice,
 			market,
 			command,
 			arguments,
-			invocation.WithProofs(prf),
+			invocation.WithProofs(dlg.Link()),
 			invocation.WithMetadata(meta),
 			invocation.WithExpiration(ucan.Now()+30),
 		),
@@ -91,8 +82,8 @@ func main() {
 
 	// Execute ///////////////////////////////////////////////////////////////////
 
-	out := result.Ok[int64, any](42)
-	rcpt := must(receipt.Issue(market, inv.Task(), out))
+	out := result.OK[int64, any](42)
+	rcpt := must(receipt.Issue(market, inv.Task().Link(), out))
 
 	// Transport /////////////////////////////////////////////////////////////////
 
@@ -103,7 +94,7 @@ func main() {
 			container.WithReceipts(rcpt),
 		),
 	)
-	os.Stdout.Write(must(container.Encode(container.Base64Gzip, ct)))
+	os.Stdout.Write(must(container.Encode(container.Base64, ct)))
 }
 
 func must[T any](val T, err error) T {
