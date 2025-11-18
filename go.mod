@@ -5,9 +5,8 @@ go 1.25
 // replace github.com/alanshaw/ucantone => /Users/alan/Code/alanshaw/ucantone
 
 require (
-	github.com/alanshaw/ucantone v0.0.0-20251112215553-9e4104d25e82
+	github.com/alanshaw/ucantone v0.0.0-20251118114639-1f6ca3d3fd35
 	github.com/ipfs/go-cid v0.5.0
-	github.com/ipld/go-ipld-prime v0.21.0
 	github.com/multiformats/go-multicodec v0.9.2
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.10.1
@@ -26,7 +25,6 @@ require (
 	github.com/multiformats/go-multibase v0.2.0 // indirect
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
-	github.com/polydawn/refmt v0.89.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect

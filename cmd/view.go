@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alanshaw/ucantone/ipld"
+	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
 	cdm "github.com/alanshaw/ucantone/ucan/container/datamodel"
@@ -20,9 +22,6 @@ import (
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/ipfs/go-cid"
-	"github.com/ipld/go-ipld-prime"
-	"github.com/ipld/go-ipld-prime/codec/dagcbor"
-	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/multiformats/go-multicodec"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -188,7 +187,7 @@ func formatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel)
 	return tableString.String()
 }
 
-func formatDAGJSONBytesMaxLen(bytes []byte, max int) string {
+func formatDagJsonBytesMaxLen(bytes []byte, max int) string {
 	b64 := base64.StdEncoding.EncodeToString(bytes)
 	if len(b64) > max {
 		b64 = b64[0:max] + "..."
@@ -216,9 +215,7 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 		table.Append([]string{"Audience", inv.Audience().DID().String()})
 	}
 	table.Append([]string{"Command", inv.Command().String()})
-
-	jsonData, _ := json.MarshalIndent(inv.Arguments(), "", "  ")
-	table.Append([]string{"Arguments", string(jsonData)})
+	table.Append([]string{"Arguments", formatDagJSON(inv.Arguments())})
 
 	if len(inv.Proofs()) > 0 {
 		var prfs []string
@@ -229,8 +226,7 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 	}
 
 	if inv.Metadata() != nil {
-		jsonData, _ := json.MarshalIndent(inv.Metadata(), "", "  ")
-		table.Append([]string{"Metadata", string(jsonData)})
+		table.Append([]string{"Metadata", formatDagJSON(inv.Metadata())})
 	}
 
 	if inv.Expiration() != nil {
@@ -247,8 +243,8 @@ func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
 		table.Append([]string{"Cause", inv.Cause().String()})
 	}
 
-	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(inv.Signature().Bytes(), 80)})
-	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(inv.Nonce(), 80)})
+	table.Append([]string{"Signature", formatDagJsonBytesMaxLen(inv.Signature().Bytes(), 80)})
+	table.Append([]string{"Nonce", formatDagJsonBytesMaxLen(inv.Nonce(), 80)})
 
 	table.Render()
 	return tableString.String()
@@ -274,12 +270,12 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 	}
 	table.Append([]string{"Command", dlg.Command().String()})
 
+	// TODO: use formatDagJSON
 	jsonData, _ := json.MarshalIndent(dlg.Policy().Statements, "", "  ")
 	table.Append([]string{"Policy", string(jsonData)})
 
 	if dlg.Metadata() != nil {
-		jsonData, _ := json.MarshalIndent(dlg.Metadata(), "", "  ")
-		table.Append([]string{"Metadata", string(jsonData)})
+		table.Append([]string{"Metadata", formatDagJSON(dlg.Metadata())})
 	}
 
 	if dlg.NotBefore() != nil {
@@ -291,31 +287,24 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 	} else {
 		table.Append([]string{"Expiration", "NULL"})
 	}
-	table.Append([]string{"Signature", formatDAGJSONBytesMaxLen(dlg.Signature().Bytes(), 80)})
-	table.Append([]string{"Nonce", formatDAGJSONBytesMaxLen(dlg.Nonce(), 80)})
+	table.Append([]string{"Signature", formatDagJsonBytesMaxLen(dlg.Signature().Bytes(), 80)})
+	table.Append([]string{"Nonce", formatDagJsonBytesMaxLen(dlg.Nonce(), 80)})
 
 	table.Render()
 	return tableString.String()
 }
 
-func cborToJSON(cbor []byte) (string, error) {
-	n, err := ipld.Decode(cbor, dagcbor.Decode)
+func formatDagJSON(value ipld.Any) string {
+	a := datamodel.Any{Value: value}
+	var anyJSON bytes.Buffer
+	err := a.MarshalDagJSON(&anyJSON)
 	if err != nil {
-		return "", fmt.Errorf("decoding dag-cbor: %w", err)
+		panic(err)
 	}
-	var b bytes.Buffer
-	err = dagjson.Encode(n, &b)
+	var anyIndentJSON bytes.Buffer
+	err = json.Indent(&anyIndentJSON, anyJSON.Bytes(), "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("encoding to dag-json: %w", err)
+		panic(err)
 	}
-	var a any
-	err = json.Unmarshal(b.Bytes(), &a)
-	if err != nil {
-		return "", fmt.Errorf("unmarshaling JSON: %w", err)
-	}
-	out, err := json.MarshalIndent(a, "", "  ")
-	if err != nil {
-		return "", fmt.Errorf("marshaling JSON: %w", err)
-	}
-	return string(out), nil
+	return anyIndentJSON.String()
 }

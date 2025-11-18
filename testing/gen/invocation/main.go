@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	inv := must(invocation.Invoke(issuer, subject, command, &arguments, invocation.WithAudience(audience)))
+	inv := must(invocation.Invoke(issuer, subject, command, arguments, invocation.WithAudience(audience)))
 	os.Stdout.Write(must(invocation.Encode(inv)))
 }
 
