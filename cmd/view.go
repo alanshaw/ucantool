@@ -22,10 +22,12 @@ import (
 	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantone/ucan/invocation"
 	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
+	"github.com/alecthomas/chroma/v2/quick"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multicodec"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
@@ -188,12 +190,21 @@ func formatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel)
 	return tableString.String()
 }
 
-func formatDagJsonBytesMaxLen(bytes []byte, max int) string {
-	b64 := base64.StdEncoding.EncodeToString(bytes)
+func formatDagJsonBytesMaxLen(buf []byte, max int) string {
+	b64 := base64.StdEncoding.EncodeToString(buf)
 	if len(b64) > max {
 		b64 = b64[0:max] + "..."
 	}
-	return fmt.Sprintf(`{"/":{"bytes":"%s"}}`, b64)
+	json := fmt.Sprintf("{\n  \"/\": {\n    \"bytes\": %q\n  }\n}", b64)
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		return json
+	}
+	var highlightedJSON bytes.Buffer
+	err := quick.Highlight(&highlightedJSON, json, "json", "terminal16m", "monokai")
+	if err != nil {
+		panic(err)
+	}
+	return highlightedJSON.String()
 }
 
 func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
@@ -309,5 +320,13 @@ func formatDagJSON(value ipld.Any) string {
 	if err != nil {
 		panic(err)
 	}
-	return anyIndentJSON.String()
+	if !term.IsTerminal(int(os.Stdout.Fd())) {
+		return anyIndentJSON.String()
+	}
+	var highlightedJSON bytes.Buffer
+	err = quick.Highlight(&highlightedJSON, anyIndentJSON.String(), "json", "terminal16m", "monokai")
+	if err != nil {
+		panic(err)
+	}
+	return highlightedJSON.String()
 }
