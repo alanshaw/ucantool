@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/alanshaw/ucantone/ipld"
+	"github.com/alanshaw/ucantone/ipld/codec/dagjson"
 	"github.com/alanshaw/ucantone/ipld/datamodel"
 	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
@@ -269,10 +270,7 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 		table.Append([]string{"Subject", dlg.Subject().DID().String()})
 	}
 	table.Append([]string{"Command", dlg.Command().String()})
-
-	// TODO: use formatDagJSON
-	jsonData, _ := json.MarshalIndent(dlg.Policy().Statements, "", "  ")
-	table.Append([]string{"Policy", string(jsonData)})
+	table.Append([]string{"Policy", formatDagJSON(dlg.Policy())})
 
 	if dlg.Metadata() != nil {
 		table.Append([]string{"Metadata", formatDagJSON(dlg.Metadata())})
@@ -295,9 +293,14 @@ func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
 }
 
 func formatDagJSON(value ipld.Any) string {
-	a := datamodel.Any{Value: value}
+	var err error
 	var anyJSON bytes.Buffer
-	err := a.MarshalDagJSON(&anyJSON)
+	if jsonMarshaler, ok := value.(dagjson.DagJsonMarshaler); ok {
+		err = jsonMarshaler.MarshalDagJSON(&anyJSON)
+	} else {
+		a := datamodel.Any{Value: value}
+		err = a.MarshalDagJSON(&anyJSON)
+	}
 	if err != nil {
 		panic(err)
 	}
