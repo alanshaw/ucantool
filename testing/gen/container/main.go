@@ -32,8 +32,8 @@ func main() {
 		delegation.Delegate(
 			market,
 			alice,
+			market,
 			"/fruits/purchase",
-			delegation.WithSubject(market),
 			delegation.WithPolicyBuilder(
 				policy.All(
 					".fruits",
@@ -79,12 +79,10 @@ func main() {
 
 	// Transport /////////////////////////////////////////////////////////////////
 
-	ct := must(
-		container.New(
-			container.WithDelegations(dlg),
-			container.WithInvocations(inv),
-			container.WithReceipts(rcpt),
-		),
+	ct := container.New(
+		container.WithDelegations(dlg),
+		container.WithInvocations(inv),
+		container.WithReceipts(rcpt),
 	)
 	os.Stdout.Write(must(container.Encode(container.Base64, ct)))
 }

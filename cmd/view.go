@@ -2,32 +2,19 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"strings"
-	"time"
 
-	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/ipld/codec/dagjson"
-	"github.com/alanshaw/ucantone/ipld/datamodel"
-	"github.com/alanshaw/ucantone/ucan"
 	"github.com/alanshaw/ucantone/ucan/container"
 	cdm "github.com/alanshaw/ucantone/ucan/container/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation"
-	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantone/ucan/invocation"
-	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
-	"github.com/alecthomas/chroma/v2/quick"
+	"github.com/alanshaw/ucantool/pkg/ucanfmt"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multicodec"
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 var (
@@ -94,6 +81,12 @@ func view(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("encoding raw container bytes: %w", err)
 		}
+
+		model := cdm.ContainerModel{}
+		if err := model.UnmarshalCBOR(bytes.NewReader(rawContainerBytes[1:])); err != nil {
+			return fmt.Errorf("decoding container model: %w", err)
+		}
+
 		// view the container
 		if containerIndex == -1 {
 			link, err := cid.Prefix{
@@ -107,17 +100,18 @@ func view(cmd *cobra.Command, args []string) error {
 			}
 			if formatJSON {
 				defer cmd.Println()
-				return ct.Model().MarshalDagJSON(cmd.OutOrStdout())
+				return ct.MarshalDagJSON(cmd.OutOrStdout())
 			}
-			cmd.Println(formatContainerAsTable(link, ucanBytes[0], ct.Model()))
+
+			cmd.Println(ucanfmt.FormatContainerAsTable(link, ucanBytes[0], &model))
 			return nil
 		}
 
 		// view an index of the container
-		if containerIndex > len(ct.Model().Ctn1)-1 {
-			return fmt.Errorf("container index out of range, requested %d, but there are only %d items", containerIndex, len(ct.Model().Ctn1))
+		if containerIndex > len(model.Ctn1)-1 {
+			return fmt.Errorf("container index out of range, requested %d, but there are only %d items", containerIndex, len(model.Ctn1))
 		}
-		ucanBytes = ct.Model().Ctn1[containerIndex]
+		ucanBytes = model.Ctn1[containerIndex]
 	}
 
 	link, err := cid.V1Builder{
@@ -134,7 +128,7 @@ func view(cmd *cobra.Command, args []string) error {
 			defer cmd.Println()
 			return inv.MarshalDagJSON(cmd.OutOrStdout())
 		}
-		cmd.Println(formatInvocation(link, inv))
+		cmd.Println(ucanfmt.FormatInvocationAsTable(link, inv))
 		return nil
 	}
 
@@ -144,189 +138,9 @@ func view(cmd *cobra.Command, args []string) error {
 			defer cmd.Println()
 			return dlg.MarshalDagJSON(cmd.OutOrStdout())
 		}
-		cmd.Println(formatDelegation(link, dlg))
+		cmd.Println(ucanfmt.FormatDelegationAsTable(link, dlg))
 		return nil
 	}
 
 	return errors.New("unable to decode")
-}
-
-func formatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel) string {
-	tableString := &strings.Builder{}
-
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Property", "Value"})
-	table.SetAutoWrapText(false)
-	table.SetAutoMergeCells(false)
-	table.SetRowLine(true)
-	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	table.SetColWidth(120)
-
-	table.Append([]string{"/", link.String()})
-	table.Append([]string{"Codec", fmt.Sprintf("0x%02x (%s)", codec, container.FormatCodec(codec))})
-	table.Append([]string{"Tag", cdm.Tag})
-
-	// data := []string{"["}
-	// for _, v := range model.Ctn1 {
-	// 	data = append(data, "  "+formatDAGJSONBytesMaxLen(v, 80))
-	// }
-	// data = append(data, "]")
-	// table.Append([]string{"Data", strings.Join(data, "\n")})
-
-	dataTableString := &strings.Builder{}
-	dataTableWriter := tablewriter.NewWriter(dataTableString)
-	dataTableWriter.SetHeader([]string{"#", "Bytes"})
-	dataTableWriter.SetAutoWrapText(false)
-	dataTableWriter.SetAutoMergeCells(false)
-	dataTableWriter.SetRowLine(true)
-	dataTableWriter.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	dataTableWriter.SetColWidth(120)
-	for i, v := range model.Ctn1 {
-		dataTableWriter.Append([]string{fmt.Sprintf("%d ", i), hex.Dump(v)})
-	}
-	dataTableWriter.Render()
-	table.Append([]string{"Contents", dataTableString.String()})
-	table.Render()
-	return tableString.String()
-}
-
-func formatDagJsonBytesMaxLen(buf []byte, max int) string {
-	b64 := base64.StdEncoding.EncodeToString(buf)
-	if len(b64) > max {
-		b64 = b64[0:max] + "..."
-	}
-	json := fmt.Sprintf("{\n  \"/\": {\n    \"bytes\": %q\n  }\n}", b64)
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		return json
-	}
-	var highlightedJSON bytes.Buffer
-	err := quick.Highlight(&highlightedJSON, json, "json", "terminal16m", "monokai")
-	if err != nil {
-		panic(err)
-	}
-	return highlightedJSON.String()
-}
-
-func formatInvocation(link cid.Cid, inv ucan.Invocation) string {
-	tableString := &strings.Builder{}
-
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Property", "Value"})
-	table.SetAutoWrapText(false)
-	table.SetAutoMergeCells(false)
-	table.SetRowLine(true)
-	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	table.SetColWidth(120)
-
-	table.Append([]string{"/", link.String()})
-	table.Append([]string{"Tag", idm.Tag})
-	table.Append([]string{"Issuer", inv.Issuer().DID().String()})
-	table.Append([]string{"Task", inv.Task().Link().String()})
-	table.Append([]string{"Subject", inv.Subject().DID().String()})
-	if inv.Audience() != nil {
-		table.Append([]string{"Audience", inv.Audience().DID().String()})
-	}
-	table.Append([]string{"Command", inv.Command().String()})
-	table.Append([]string{"Arguments", formatDagJSON(inv.Arguments())})
-
-	if len(inv.Proofs()) > 0 {
-		var prfs []string
-		for _, p := range inv.Proofs() {
-			prfs = append(prfs, p.String())
-		}
-		table.Append([]string{"Proofs", strings.Join(prfs, "\n")})
-	}
-
-	if inv.Metadata() != nil {
-		table.Append([]string{"Metadata", formatDagJSON(inv.Metadata())})
-	}
-
-	if inv.Expiration() != nil {
-		table.Append([]string{"Expiration", time.Unix(int64(*inv.Expiration()), 0).UTC().Format(time.DateTime)})
-	} else {
-		table.Append([]string{"Expiration", "NULL"})
-	}
-
-	if inv.IssuedAt() != nil {
-		table.Append([]string{"Issued At", time.Unix(int64(*inv.IssuedAt()), 0).UTC().Format(time.DateTime)})
-	}
-
-	if inv.Cause() != nil {
-		table.Append([]string{"Cause", inv.Cause().String()})
-	}
-
-	table.Append([]string{"Signature", formatDagJsonBytesMaxLen(inv.Signature().Bytes(), 80)})
-	table.Append([]string{"Nonce", formatDagJsonBytesMaxLen(inv.Nonce(), 80)})
-
-	table.Render()
-	return tableString.String()
-}
-
-func formatDelegation(link cid.Cid, dlg ucan.Delegation) string {
-	tableString := &strings.Builder{}
-
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Property", "Value"})
-	table.SetAutoWrapText(false)
-	table.SetAutoMergeCells(false)
-	table.SetRowLine(true)
-	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	table.SetColWidth(120)
-
-	table.Append([]string{"/", link.String()})
-	table.Append([]string{"Tag", ddm.Tag})
-	table.Append([]string{"Issuer", dlg.Issuer().DID().String()})
-	table.Append([]string{"Audience", dlg.Audience().DID().String()})
-	if dlg.Subject() != nil {
-		table.Append([]string{"Subject", dlg.Subject().DID().String()})
-	}
-	table.Append([]string{"Command", dlg.Command().String()})
-	table.Append([]string{"Policy", formatDagJSON(dlg.Policy())})
-
-	if dlg.Metadata() != nil {
-		table.Append([]string{"Metadata", formatDagJSON(dlg.Metadata())})
-	}
-
-	if dlg.NotBefore() != nil {
-		table.Append([]string{"Not Before", time.Unix(int64(*dlg.NotBefore()), 0).UTC().Format(time.DateTime)})
-	}
-
-	if dlg.Expiration() != nil {
-		table.Append([]string{"Expiration", time.Unix(int64(*dlg.Expiration()), 0).UTC().Format(time.DateTime)})
-	} else {
-		table.Append([]string{"Expiration", "NULL"})
-	}
-	table.Append([]string{"Signature", formatDagJsonBytesMaxLen(dlg.Signature().Bytes(), 80)})
-	table.Append([]string{"Nonce", formatDagJsonBytesMaxLen(dlg.Nonce(), 80)})
-
-	table.Render()
-	return tableString.String()
-}
-
-func formatDagJSON(value ipld.Any) string {
-	var err error
-	var anyJSON bytes.Buffer
-	if jsonMarshaler, ok := value.(dagjson.DagJsonMarshaler); ok {
-		err = jsonMarshaler.MarshalDagJSON(&anyJSON)
-	} else {
-		a := datamodel.Any{Value: value}
-		err = a.MarshalDagJSON(&anyJSON)
-	}
-	if err != nil {
-		panic(err)
-	}
-	var anyIndentJSON bytes.Buffer
-	err = json.Indent(&anyIndentJSON, anyJSON.Bytes(), "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
-		return anyIndentJSON.String()
-	}
-	var highlightedJSON bytes.Buffer
-	err = quick.Highlight(&highlightedJSON, anyIndentJSON.String(), "json", "terminal16m", "monokai")
-	if err != nil {
-		panic(err)
-	}
-	return highlightedJSON.String()
 }
