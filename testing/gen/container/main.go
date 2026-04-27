@@ -6,6 +6,7 @@ import (
 	"github.com/alanshaw/ucantone/did"
 	"github.com/alanshaw/ucantone/ipld"
 	"github.com/alanshaw/ucantone/principal/ed25519"
+	"github.com/alanshaw/ucantone/principal/secp256k1"
 	"github.com/alanshaw/ucantone/principal/signer"
 	"github.com/alanshaw/ucantone/result"
 	"github.com/alanshaw/ucantone/ucan"
@@ -18,7 +19,7 @@ import (
 )
 
 func main() {
-	alice := must(ed25519.Generate())
+	alice := must(secp256k1.Generate())
 	market := must(
 		signer.Wrap(
 			must(ed25519.Generate()),

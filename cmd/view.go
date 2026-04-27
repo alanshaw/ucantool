@@ -11,6 +11,10 @@ import (
 	cdm "github.com/alanshaw/ucantone/ucan/container/datamodel"
 	"github.com/alanshaw/ucantone/ucan/delegation"
 	"github.com/alanshaw/ucantone/ucan/invocation"
+	"github.com/alanshaw/ucantone/varsig"
+	"github.com/alanshaw/ucantone/varsig/algorithm/ed25519"
+	"github.com/alanshaw/ucantone/varsig/algorithm/secp256k1"
+	"github.com/alanshaw/ucantone/varsig/payload/dagcbor"
 	"github.com/alanshaw/ucantool/pkg/ucanfmt"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multicodec"
@@ -41,6 +45,10 @@ func init() {
 
 	viewCmd.Flags().IntVarP(&containerIndex, "container-index", "i", -1, "If input is a UCAN container, view the data at this index.")
 	viewCmd.Flags().BoolVarP(&formatJSON, "json", "j", false, "Format output as DAG-JSON.")
+
+	varsig.RegisterSignatureAlgorithm(ed25519.NewCodec())
+	varsig.RegisterSignatureAlgorithm(secp256k1.NewCodec())
+	varsig.RegisterPayloadEncoding(dagcbor.NewCodec())
 }
 
 // view reads a delegation from a file or stdin and displays its information
