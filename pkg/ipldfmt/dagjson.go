@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alanshaw/ucantone/ipld"
-	"github.com/alanshaw/ucantone/ipld/codec/dagjson"
-	"github.com/alanshaw/ucantone/ipld/datamodel"
+	jsg "github.com/alanshaw/dag-json-gen"
 	"github.com/alecthomas/chroma/v2/quick"
+	"github.com/fil-forge/ucantone/ipld"
+	"github.com/fil-forge/ucantone/ipld/datamodel"
 	"golang.org/x/term"
 )
 
@@ -34,7 +34,7 @@ func FormatDagJsonBytesMaxLen(buf []byte, max int) string {
 func FormatDagJSON(value ipld.Any) string {
 	var err error
 	var anyJSON bytes.Buffer
-	if jsonMarshaler, ok := value.(dagjson.DagJsonMarshaler); ok {
+	if jsonMarshaler, ok := value.(jsg.DagJsonMarshaler); ok {
 		err = jsonMarshaler.MarshalDagJSON(&anyJSON)
 	} else {
 		a := datamodel.Any{Value: value}

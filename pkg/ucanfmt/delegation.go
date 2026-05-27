@@ -1,12 +1,15 @@
 package ucanfmt
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/alanshaw/ucantone/ucan"
-	ddm "github.com/alanshaw/ucantone/ucan/delegation/datamodel"
 	"github.com/alanshaw/ucantool/pkg/ipldfmt"
+	"github.com/fil-forge/ucantone/ipld/datamodel"
+	"github.com/fil-forge/ucantone/ucan"
+	ddm "github.com/fil-forge/ucantone/ucan/delegation/datamodel"
 	"github.com/ipfs/go-cid"
 	"github.com/olekukonko/tablewriter"
 )
@@ -24,16 +27,20 @@ func FormatDelegationAsTable(link cid.Cid, dlg ucan.Delegation) string {
 
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Tag", ddm.Tag})
-	table.Append([]string{"Issuer", dlg.Issuer().DID().String()})
-	table.Append([]string{"Audience", dlg.Audience().DID().String()})
-	if dlg.Subject() != nil {
-		table.Append([]string{"Subject", dlg.Subject().DID().String()})
+	table.Append([]string{"Issuer", dlg.Issuer().String()})
+	table.Append([]string{"Audience", dlg.Audience().String()})
+	if dlg.Subject().Defined() {
+		table.Append([]string{"Subject", dlg.Subject().String()})
 	}
 	table.Append([]string{"Command", dlg.Command().String()})
 	table.Append([]string{"Policy", ipldfmt.FormatDagJSON(dlg.Policy())})
 
-	if dlg.Metadata() != nil {
-		table.Append([]string{"Metadata", ipldfmt.FormatDagJSON(dlg.Metadata())})
+	if len(dlg.MetadataBytes()) > 0 {
+		var meta datamodel.Map
+		if err := meta.UnmarshalCBOR(bytes.NewReader(dlg.MetadataBytes())); err != nil {
+			panic(fmt.Errorf("unmarshaling metadata: %w", err))
+		}
+		table.Append([]string{"Metadata", ipldfmt.FormatDagJSON(meta)})
 	}
 
 	if dlg.NotBefore() != nil {

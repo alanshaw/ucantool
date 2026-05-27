@@ -1,12 +1,15 @@
 package ucanfmt
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/alanshaw/ucantone/ucan"
-	idm "github.com/alanshaw/ucantone/ucan/invocation/datamodel"
 	"github.com/alanshaw/ucantool/pkg/ipldfmt"
+	"github.com/fil-forge/ucantone/ipld/datamodel"
+	"github.com/fil-forge/ucantone/ucan"
+	idm "github.com/fil-forge/ucantone/ucan/invocation/datamodel"
 	"github.com/ipfs/go-cid"
 	"github.com/olekukonko/tablewriter"
 )
@@ -24,14 +27,19 @@ func FormatInvocationAsTable(link cid.Cid, inv ucan.Invocation) string {
 
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Tag", idm.Tag})
-	table.Append([]string{"Issuer", inv.Issuer().DID().String()})
+	table.Append([]string{"Issuer", inv.Issuer().String()})
 	table.Append([]string{"Task", inv.Task().Link().String()})
-	table.Append([]string{"Subject", inv.Subject().DID().String()})
-	if inv.Audience() != nil {
-		table.Append([]string{"Audience", inv.Audience().DID().String()})
+	table.Append([]string{"Subject", inv.Subject().String()})
+	if inv.Audience().Defined() {
+		table.Append([]string{"Audience", inv.Audience().String()})
 	}
 	table.Append([]string{"Command", inv.Command().String()})
-	table.Append([]string{"Arguments", ipldfmt.FormatDagJSON(inv.Arguments())})
+
+	var args datamodel.Map
+	if err := args.UnmarshalCBOR(bytes.NewReader(inv.ArgumentsBytes())); err != nil {
+		panic(fmt.Errorf("unmarshaling arguments: %w", err))
+	}
+	table.Append([]string{"Arguments", ipldfmt.FormatDagJSON(args)})
 
 	if len(inv.Proofs()) > 0 {
 		var prfs []string
@@ -41,8 +49,12 @@ func FormatInvocationAsTable(link cid.Cid, inv ucan.Invocation) string {
 		table.Append([]string{"Proofs", strings.Join(prfs, "\n")})
 	}
 
-	if inv.Metadata() != nil {
-		table.Append([]string{"Metadata", ipldfmt.FormatDagJSON(inv.Metadata())})
+	if len(inv.MetadataBytes()) > 0 {
+		var meta datamodel.Map
+		if err := meta.UnmarshalCBOR(bytes.NewReader(inv.MetadataBytes())); err != nil {
+			panic(fmt.Errorf("unmarshaling metadata: %w", err))
+		}
+		table.Append([]string{"Metadata", ipldfmt.FormatDagJSON(meta)})
 	}
 
 	if inv.Expiration() != nil {

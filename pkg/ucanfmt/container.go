@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/alanshaw/ucantone/ucan/container"
-	cdm "github.com/alanshaw/ucantone/ucan/container/datamodel"
+	"github.com/fil-forge/ucantone/ucan/container"
+	cdm "github.com/fil-forge/ucantone/ucan/container/datamodel"
 	"github.com/ipfs/go-cid"
 	"github.com/olekukonko/tablewriter"
 )
