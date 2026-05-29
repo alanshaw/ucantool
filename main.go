@@ -1,6 +1,6 @@
 package main
 
-import "github.com/alanshaw/ucantool/cmd"
+import "github.com/fil-forge/ucantool/cmd"
 
 func main() {
 	cmd.Execute()

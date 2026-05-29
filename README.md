@@ -5,7 +5,7 @@ A tool for working with UCAN 1.0 tokens.
 ## Install
 
 ```sh
-go install github.com/alanshaw/ucantool
+go install github.com/fil-forge/ucantool
 ```
 
 ## Usage
@@ -82,7 +82,7 @@ ucantool view container.bin --json
 
 ## Contributing
 
-Feel free to join in. All welcome. Please [open an issue](https://github.com/alanshaw/ucantool/issues)!
+Feel free to join in. All welcome. Please [open an issue](https://github.com/fil-forge/ucantool/issues)!
 
 ## License
 

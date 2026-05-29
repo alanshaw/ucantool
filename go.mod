@@ -1,4 +1,4 @@
-module github.com/alanshaw/ucantool
+module github.com/fil-forge/ucantool
 
 go 1.25.0
 

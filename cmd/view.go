@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/alanshaw/ucantool/pkg/ucanfmt"
+	"github.com/fil-forge/ucantool/pkg/ucanfmt"
 	"github.com/fil-forge/ucantone/ucan/container"
 	cdm "github.com/fil-forge/ucantone/ucan/container/datamodel"
 	"github.com/fil-forge/ucantone/ucan/delegation"

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/alanshaw/ucantool/pkg/identity"
+	"github.com/fil-forge/ucantool/pkg/identity"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/principal"
 	"github.com/fil-forge/ucantone/principal/signer"

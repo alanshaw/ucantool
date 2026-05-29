@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alanshaw/ucantool/pkg/ipldfmt"
+	"github.com/fil-forge/ucantool/pkg/ipldfmt"
 	"github.com/fil-forge/ucantone/ipld/datamodel"
 	"github.com/fil-forge/ucantone/ucan"
 	ddm "github.com/fil-forge/ucantone/ucan/delegation/datamodel"

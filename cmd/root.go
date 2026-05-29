@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/alanshaw/ucantool/cmd/identity"
+	"github.com/fil-forge/ucantool/cmd/identity"
 	"github.com/spf13/cobra"
 )
 
