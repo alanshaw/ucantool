@@ -10,13 +10,33 @@ go install github.com/alanshaw/ucantool
 
 ## Usage
 
+### `ucantool delegate`
+
+Generate a UCAN delegation.
+
+```sh
+ucantool delegate --issuer-private-key-file=id.pem --audience=did:key:aud --subject=did:key:sub --command=/msg/send
+```
+
+### `ucantool identity generate`
+
+Generate a new PEM-encoded Ed25519 key pair for use with decentralized identities (DIDs).
+
+```sh
+ucantool identity generate
+```
+
+### `ucantool view`
+
+Decode and display information about a UCAN from a file or stdin.
+
 ```sh
 ucantool view <file>
 ```
 
-### Examples
+#### Examples
 
-#### Pipe in
+##### Pipe in
 
 You can pipe invocation/delegation/container bytes in and visualize:
 
@@ -25,7 +45,7 @@ echo "FH4sIAAAAAAAA_1qYllySp1tm2BzJaNwU4aBS--uuQzd_z4EvGxnU2i5-zn87sTmFIfDDl6_vq
   | ucantool view
 ```
 
-#### Token in Container
+##### Token in Container
 
 If you have a UCAN container, you can visualize a specific token by index:
 
@@ -33,7 +53,7 @@ If you have a UCAN container, you can visualize a specific token by index:
 ucantool view -i 1 container.ucan
 ```
 
-#### JSON output
+##### JSON output
 
 The `--json` flag will output `dag-json` encoding of the input.
 
