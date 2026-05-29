@@ -41,8 +41,6 @@ var viewCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(viewCmd)
-
 	viewCmd.Flags().IntVarP(&containerIndex, "container-index", "i", -1, "If input is a UCAN container, view the data at this index.")
 	viewCmd.Flags().BoolVarP(&formatJSON, "json", "j", false, "Format output as DAG-JSON.")
 

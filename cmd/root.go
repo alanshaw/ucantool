@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/alanshaw/ucantool/cmd/identity"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	rootCmd.AddCommand(delegateCmd)
+	rootCmd.AddCommand(identity.Cmd)
+	rootCmd.AddCommand(viewCmd)
 }
