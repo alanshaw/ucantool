@@ -17,6 +17,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defaultContainerCodec = "base64+gzip"
+
 var delegateCmd = &cobra.Command{
 	Use:          "delegate",
 	Aliases:      []string{"d"},
@@ -57,7 +59,7 @@ func init() {
 
 	delegateCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration time in UTC seconds since Unix epoch")
 
-	delegateCmd.Flags().StringVarP(&containerCodecStr, "container", "o", "", "encode delegation in a UCAN container with the specified codec (e.g. 'raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip')")
+	delegateCmd.Flags().StringVarP(&containerCodecStr, "container", "o", defaultContainerCodec, "encode delegation in a UCAN container with the specified codec (e.g. 'raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip')")
 }
 
 func mkDelegation(cmd *cobra.Command, _ []string) error {
