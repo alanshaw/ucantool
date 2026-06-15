@@ -5,14 +5,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/fil-forge/ucantool/pkg/identity"
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/principal"
 	"github.com/fil-forge/ucantone/principal/signer"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/command"
+	"github.com/fil-forge/ucantone/ucan/container"
 	"github.com/fil-forge/ucantone/ucan/delegation"
 	"github.com/fil-forge/ucantone/ucan/delegation/policy"
+	"github.com/fil-forge/ucantool/pkg/identity"
 	"github.com/spf13/cobra"
 )
 
@@ -31,8 +32,9 @@ var (
 	issuerDidWeb         string
 	audienceStr          string
 	subjectStr           string
-	commandStr           string
+	commandsStr          []string
 	policyStr            string
+	containerCodecStr    string
 	expiration           int64
 )
 
@@ -40,7 +42,7 @@ func init() {
 	delegateCmd.Flags().StringVarP(&issuerPrivateKeyFile, "issuer-private-key-file", "f", "", "Path to PEM encoded Ed25519 private key of delegation issuer")
 	cobra.CheckErr(delegateCmd.MarkFlagRequired("issuer-private-key-file"))
 
-	delegateCmd.Flags().StringVarP(&issuerDidWeb, "issuer-did-web", "i", "", "Optional did:web: of issuer, when provided warps did:key: of delegation issuer")
+	delegateCmd.Flags().StringVarP(&issuerDidWeb, "issuer-did-web", "i", "", "Optional did:web: of issuer, when provided wraps did:key: of delegation issuer")
 
 	delegateCmd.Flags().StringVarP(&audienceStr, "audience", "a", "", "DID of the delegation audience")
 	cobra.CheckErr(delegateCmd.MarkFlagRequired("audience"))
@@ -48,12 +50,14 @@ func init() {
 	delegateCmd.Flags().StringVarP(&subjectStr, "subject", "s", "", "DID of the delegation subject")
 	cobra.CheckErr(delegateCmd.MarkFlagRequired("subject"))
 
-	delegateCmd.Flags().StringVarP(&commandStr, "command", "c", "", "command issuer will authorize to audience")
+	delegateCmd.Flags().StringSliceVarP(&commandsStr, "command", "c", []string{}, "command(s) issuer will authorize to audience. Note: specifying multiple commands forces containerized output.")
 	cobra.CheckErr(delegateCmd.MarkFlagRequired("command"))
 
 	delegateCmd.Flags().StringVarP(&policyStr, "policy", "p", "", "policy for the delegation")
 
 	delegateCmd.Flags().Int64VarP(&expiration, "expiration", "e", 0, "expiration time in UTC seconds since Unix epoch")
+
+	delegateCmd.Flags().StringVarP(&containerCodecStr, "container", "o", "", "encode delegation in a UCAN container with the specified codec (e.g. 'raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip')")
 }
 
 func mkDelegation(cmd *cobra.Command, _ []string) error {
@@ -96,9 +100,13 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("parsing subject DID: %w", err)
 	}
 
-	command, err := command.Parse(commandStr)
-	if err != nil {
-		return fmt.Errorf("parsing command: %w", err)
+	var commands []ucan.Command
+	for _, commandStr := range commandsStr {
+		command, err := command.Parse(commandStr)
+		if err != nil {
+			return fmt.Errorf("parsing command: %w", err)
+		}
+		commands = append(commands, command)
 	}
 
 	if policyStr != "" {
@@ -109,20 +117,45 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		opts = append(opts, delegation.WithPolicy(pol))
 	}
 
-	d, err := delegation.Delegate(
-		issuer,
-		audience,
-		subject,
-		command,
-		opts...,
-	)
-	if err != nil {
-		return fmt.Errorf("creating delegation: %w", err)
+	var delegations []ucan.Delegation
+	for _, cmd := range commands {
+		d, err := delegation.Delegate(issuer, audience, subject, cmd, opts...)
+		if err != nil {
+			return fmt.Errorf("creating delegation: %w", err)
+		}
+		delegations = append(delegations, d)
 	}
 
-	out, err := delegation.Encode(d)
+	if len(delegations) == 1 && containerCodecStr == "" {
+		out, err := delegation.Encode(delegations[0])
+		if err != nil {
+			return fmt.Errorf("formatting delegation: %w", err)
+		}
+		fmt.Println(string(out))
+		return nil
+	}
+
+	var codec byte
+	switch containerCodecStr {
+	case "raw":
+		codec = container.Raw
+	case "base64":
+		codec = container.Base64
+	case "base64url":
+		codec = container.Base64url
+	case "raw+gzip":
+		codec = container.RawGzip
+	case "base64+gzip":
+		codec = container.Base64Gzip
+	case "base64url+gzip":
+		codec = container.Base64urlGzip
+	default:
+		return fmt.Errorf("invalid container codec: %s", containerCodecStr)
+	}
+
+	out, err := container.Encode(codec, container.New(container.WithDelegations(delegations...)))
 	if err != nil {
-		return fmt.Errorf("formatting delegation: %w", err)
+		return fmt.Errorf("encoding container: %w", err)
 	}
 	fmt.Println(string(out))
 	return nil
