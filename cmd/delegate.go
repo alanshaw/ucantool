@@ -49,8 +49,7 @@ func init() {
 	delegateCmd.Flags().StringVarP(&audienceStr, "audience", "a", "", "DID of the delegation audience")
 	cobra.CheckErr(delegateCmd.MarkFlagRequired("audience"))
 
-	delegateCmd.Flags().StringVarP(&subjectStr, "subject", "s", "", "DID of the delegation subject")
-	cobra.CheckErr(delegateCmd.MarkFlagRequired("subject"))
+	delegateCmd.Flags().StringVarP(&subjectStr, "subject", "s", "", "DID of the delegation subject (if different from the issuer)")
 
 	delegateCmd.Flags().StringSliceVarP(&commandsStr, "command", "c", []string{}, "command(s) issuer will authorize to audience. Note: specifying multiple commands forces containerized output.")
 	cobra.CheckErr(delegateCmd.MarkFlagRequired("command"))
@@ -97,9 +96,14 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		opts = append(opts, delegation.WithNoExpiration())
 	}
 
-	subject, err := did.Parse(subjectStr)
-	if err != nil {
-		return fmt.Errorf("parsing subject DID: %w", err)
+	var subject did.DID
+	if subjectStr == "" {
+		subject = issuer.DID()
+	} else {
+		subject, err = did.Parse(subjectStr)
+		if err != nil {
+			return fmt.Errorf("parsing subject DID: %w", err)
+		}
 	}
 
 	var commands []ucan.Command
