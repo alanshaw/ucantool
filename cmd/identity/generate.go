@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fil-forge/ucantone/multikey/ed25519"
 	"github.com/fil-forge/ucantool/pkg/identity"
-	"github.com/fil-forge/ucantone/principal/ed25519"
 	"github.com/spf13/cobra"
 )
 
@@ -24,13 +24,13 @@ The DID is printed to stderr for convenience.
 		if err != nil {
 			return fmt.Errorf("generating ed25519 key: %w", err)
 		}
-		pem, err := identity.EncodeEd25519SignerToPEM(signer)
+		pem, err := identity.EncodeSignerToPEM(signer)
 		if err != nil {
 			return fmt.Errorf("encoding key to PEM: %w", err)
 		}
 		cmd.SetOut(os.Stdout)
 		cmd.SetErr(os.Stderr)
-		cmd.PrintErrf("# %s\n", signer.DID())
+		cmd.PrintErrf("# %s\n", signer.KeyDID())
 		cmd.Print(string(pem))
 		return nil
 	},

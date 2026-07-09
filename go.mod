@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/alanshaw/dag-json-gen v0.0.6
 	github.com/alecthomas/chroma/v2 v2.20.0
-	github.com/fil-forge/ucantone v0.0.0-20260527115858-517b03bc3c72
+	github.com/fil-forge/ucantone v0.0.0-20260706102443-79141c5cc52e
 	github.com/ipfs/go-cid v0.6.0
 	github.com/multiformats/go-multicodec v0.9.2
 	github.com/olekukonko/tablewriter v0.0.5
