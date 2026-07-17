@@ -134,8 +134,8 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("formatting delegation: %w", err)
 		}
-		fmt.Println(string(out))
-		return nil
+		_, err = cmd.OutOrStdout().Write(out)
+		return err
 	}
 
 	if containerCodecStr == "" {
@@ -164,7 +164,12 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("encoding container: %w", err)
 	}
-	fmt.Println(string(out))
+	if codec == container.Raw || codec == container.RawGzip {
+		// binary output, no trailing newline
+		_, err = cmd.OutOrStdout().Write(out)
+		return err
+	}
+	cmd.Println(string(out))
 	return nil
 }
 
