@@ -18,6 +18,14 @@ Generate a UCAN delegation.
 ucantool delegate --issuer-private-key-file=id.pem --audience=did:key:aud --subject=did:key:sub --command=/msg/send
 ```
 
+### `ucantool container pack`
+
+Combine UCAN files into a single UCAN container. Each file can be a UCAN container or a CBOR encoded delegation, invocation or receipt. Tokens are deduplicated. Use `--codec` to choose the output encoding ('raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip', default 'base64+gzip').
+
+```sh
+ucantool container pack delegation.cbor invocation.cbor container.ucan --codec base64url+gzip > packed.ucan
+```
+
 ### `ucantool identity generate`
 
 Generate a new PEM-encoded Ed25519 key pair for use with decentralized identities (DIDs).
