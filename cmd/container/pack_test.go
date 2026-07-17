@@ -84,9 +84,21 @@ func TestPack(t *testing.T) {
 		require.Len(t, packed.Delegations(), 1)
 	})
 
+	t.Run("string encoded container argument", func(t *testing.T) {
+		ctnStr := string(testutil.Must(ucontainer.Encode(ucontainer.Base64urlGzip, ctn))(t))
+		stdout, err := execPack(t, ctnStr, rcptPath, "-o", "raw")
+		require.NoError(t, err)
+
+		packed, err := ucontainer.Decode(stdout)
+		require.NoError(t, err)
+		require.Len(t, packed.Delegations(), 1)
+		require.Len(t, packed.Invocations(), 1)
+		require.Len(t, packed.Receipts(), 1)
+	})
+
 	t.Run("errors on missing file", func(t *testing.T) {
 		_, err := execPack(t, filepath.Join(dir, "missing.cbor"), "-o", "raw")
-		require.ErrorContains(t, err, "file does not exist")
+		require.ErrorContains(t, err, "file does not exist and not a string encoded container")
 	})
 
 	t.Run("errors on undecodable file", func(t *testing.T) {

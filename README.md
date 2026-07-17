@@ -20,10 +20,14 @@ ucantool delegate --issuer-private-key-file=id.pem --audience=did:key:aud --subj
 
 ### `ucantool container pack`
 
-Combine UCAN files into a single UCAN container. Each file can be a UCAN container or a CBOR encoded delegation, invocation or receipt. Tokens are deduplicated. Use `--codec` to choose the output encoding ('raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip', default 'base64+gzip').
+Combine UCANs into a single UCAN container. Each argument can be a path to a file (a UCAN container or a CBOR encoded delegation, invocation or receipt) or a string encoded UCAN container. Tokens are deduplicated. Use `--codec` to choose the output encoding ('raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip', default 'base64+gzip').
 
 ```sh
 ucantool container pack delegation.cbor invocation.cbor container.ucan --codec base64url+gzip > packed.ucan
+```
+
+```sh
+ucantool container pack container.ucan "FH4sIAAAAAAAA_..." > packed.ucan
 ```
 
 ### `ucantool identity generate`

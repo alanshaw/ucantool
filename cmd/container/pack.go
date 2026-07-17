@@ -15,11 +15,11 @@ import (
 const defaultContainerCodec = "base64+gzip"
 
 var packCmd = &cobra.Command{
-	Use:   "pack <path> [path...]",
-	Short: "Combine UCAN files into a single UCAN container",
-	Long: `Reads one or more files, each a UCAN container or a CBOR encoded delegation,
-invocation or receipt, combines their tokens into a single UCAN container and
-writes it to stdout.`,
+	Use:   "pack <path|container> [path|container...]",
+	Short: "Combine UCANs into a single UCAN container",
+	Long: `Combines one or more UCANs into a single UCAN container and writes it to
+stdout. Each argument is a path to a file (a UCAN container or a CBOR encoded
+delegation, invocation or receipt) or a string encoded UCAN container.`,
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE:         pack,
@@ -44,19 +44,28 @@ func pack(cmd *cobra.Command, args []string) error {
 	var invocations []ucan.Invocation
 	var receipts []ucan.Receipt
 
-	for _, filePath := range args {
-		fileBytes, err := os.ReadFile(filePath)
+	addContainer := func(ct ucan.Container) {
+		delegations = append(delegations, ct.Delegations()...)
+		invocations = append(invocations, ct.Invocations()...)
+		receipts = append(receipts, ct.Receipts()...)
+	}
+
+	for _, arg := range args {
+		fileBytes, err := os.ReadFile(arg)
 		if err != nil {
+			// not a readable file, maybe a string encoded container
+			if ct, cerr := container.Decode([]byte(arg)); cerr == nil {
+				addContainer(ct)
+				continue
+			}
 			if os.IsNotExist(err) {
-				return fmt.Errorf("file does not exist: %s", filePath)
+				return fmt.Errorf("file does not exist and not a string encoded container: %s", arg)
 			}
 			return err
 		}
 
 		if ct, err := container.Decode(fileBytes); err == nil {
-			delegations = append(delegations, ct.Delegations()...)
-			invocations = append(invocations, ct.Invocations()...)
-			receipts = append(receipts, ct.Receipts()...)
+			addContainer(ct)
 			continue
 		}
 
@@ -76,7 +85,7 @@ func pack(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		return fmt.Errorf("unable to decode %s: not a container, delegation, invocation or receipt", filePath)
+		return fmt.Errorf("unable to decode %s: not a container, delegation, invocation or receipt", arg)
 	}
 
 	ct := container.New(
