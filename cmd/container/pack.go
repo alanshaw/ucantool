@@ -51,19 +51,18 @@ func pack(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, arg := range args {
+		if ct, err := container.Decode([]byte(arg)); err == nil {
+			addContainer(ct)
+			continue
+		}
+
 		fileBytes, err := os.ReadFile(arg)
 		if err != nil {
-			// not a readable file, maybe a string encoded container
-			if ct, cerr := container.Decode([]byte(arg)); cerr == nil {
-				addContainer(ct)
-				continue
-			}
 			if os.IsNotExist(err) {
 				return fmt.Errorf("file does not exist and not a string encoded container: %s", arg)
 			}
 			return err
 		}
-
 		if ct, err := container.Decode(fileBytes); err == nil {
 			addContainer(ct)
 			continue
