@@ -59,9 +59,9 @@ func pack(cmd *cobra.Command, args []string) error {
 		fileBytes, err := os.ReadFile(arg)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return fmt.Errorf("file does not exist and not a string encoded container: %s", arg)
+				return fmt.Errorf("file does not exist and not a string encoded container: %q", arg)
 			}
-			return err
+			return fmt.Errorf("reading %q: %w", arg, err)
 		}
 		if ct, err := container.Decode(fileBytes); err == nil {
 			addContainer(ct)
@@ -122,6 +122,6 @@ func parseCodec(s string) (byte, error) {
 	case "base64url+gzip":
 		return container.Base64urlGzip, nil
 	default:
-		return 0, fmt.Errorf("invalid container codec: %s", s)
+		return 0, fmt.Errorf("invalid container codec: %q", s)
 	}
 }

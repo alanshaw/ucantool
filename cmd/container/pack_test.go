@@ -77,6 +77,7 @@ func TestPack(t *testing.T) {
 	t.Run("text codec output round trips", func(t *testing.T) {
 		stdout, err := execPack(t, dlgPath, "-o", "base64url+gzip")
 		require.NoError(t, err)
+		require.NotEmpty(t, stdout)
 		require.Equal(t, byte('\n'), stdout[len(stdout)-1])
 
 		packed, err := ucontainer.Decode(bytes.TrimRight(stdout, "\n"))
