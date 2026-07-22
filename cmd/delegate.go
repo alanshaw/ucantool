@@ -169,8 +169,11 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		_, err = cmd.OutOrStdout().Write(out)
 		return err
 	}
-	cmd.Println(string(out))
-	return nil
+	// Write to stdout (cmd.Println goes to stderr) so redirected/pipelined
+	// callers capture the encoded container, matching the raw and
+	// single-delegation branches above.
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), string(out))
+	return err
 }
 
 // readAndDecodeIssuerKey attempts to read and decode the private key from the
