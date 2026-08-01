@@ -3,6 +3,7 @@ package cmd
 import (
 	"os"
 
+	cmdcontainer "github.com/fil-forge/ucantool/cmd/container"
 	"github.com/fil-forge/ucantool/cmd/identity"
 	"github.com/spf13/cobra"
 )
@@ -27,4 +28,5 @@ func init() {
 	rootCmd.AddCommand(delegateCmd)
 	rootCmd.AddCommand(identity.Cmd)
 	rootCmd.AddCommand(viewCmd)
+	rootCmd.AddCommand(cmdcontainer.Cmd)
 }

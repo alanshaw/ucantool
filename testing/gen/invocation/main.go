@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/fil-forge/ucantone/did"
-	"github.com/fil-forge/ucantone/principal/ed25519"
+	"github.com/fil-forge/ucantone/multikey/ed25519"
 	tdm "github.com/fil-forge/ucantone/testutil/datamodel"
 	"github.com/fil-forge/ucantone/ucan/command"
 	"github.com/fil-forge/ucantone/ucan/invocation"
@@ -12,12 +12,12 @@ import (
 )
 
 func main() {
-	issuer := must(ed25519.Generate())
+	issuer := must(ed25519.GenerateIssuer())
 	subject := must(did.Parse("did:key:z6MkrYxEAeY8bQGaxaY2S5QuN7skMSAyye3XacFxk2iMFw5G"))
 	audience := must(did.Parse("did:web:example.com"))
 	command := must(command.Parse("/test/invoke"))
 	arguments := tdm.TestArgs{
-		ID:    must(ed25519.Generate()).DID(),
+		ID:    must(ed25519.GenerateIssuer()).DID(),
 		Link:  must(cid.Parse("bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy")),
 		Str:   "test",
 		Num:   1000,

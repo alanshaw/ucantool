@@ -5,9 +5,9 @@ import (
 
 	"github.com/fil-forge/ucantone/did"
 	"github.com/fil-forge/ucantone/ipld/datamodel"
-	"github.com/fil-forge/ucantone/principal/ed25519"
-	"github.com/fil-forge/ucantone/principal/secp256k1"
-	"github.com/fil-forge/ucantone/principal/signer"
+	"github.com/fil-forge/ucantone/multikey"
+	"github.com/fil-forge/ucantone/multikey/ed25519"
+	"github.com/fil-forge/ucantone/multikey/secp256k1"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/command"
 	"github.com/fil-forge/ucantone/ucan/container"
@@ -19,12 +19,10 @@ import (
 )
 
 func main() {
-	alice := must(secp256k1.Generate())
-	market := must(
-		signer.Wrap(
-			must(ed25519.Generate()),
-			must(did.Parse("did:web:fruit.market")),
-		),
+	alice := must(secp256k1.GenerateIssuer())
+	market := multikey.NewIssuer(
+		must(did.Parse("did:web:fruit.market")),
+		must(ed25519.Generate()),
 	)
 
 	// Delegate //////////////////////////////////////////////////////////////////
@@ -54,7 +52,7 @@ func main() {
 		"fruits": []string{"apple", "banana"},
 	}
 	meta := datamodel.Map{
-		"id":   must(ed25519.Generate()).DID().String(),
+		"id":   must(ed25519.GenerateIssuer()).DID().String(),
 		"root": must(cid.Parse("bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy")),
 		"name": "test",
 		"size": int64(1000),

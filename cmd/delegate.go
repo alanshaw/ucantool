@@ -6,8 +6,7 @@ import (
 	"time"
 
 	"github.com/fil-forge/ucantone/did"
-	"github.com/fil-forge/ucantone/principal"
-	"github.com/fil-forge/ucantone/principal/signer"
+	"github.com/fil-forge/ucantone/multikey"
 	"github.com/fil-forge/ucantone/ucan"
 	"github.com/fil-forge/ucantone/ucan/command"
 	"github.com/fil-forge/ucantone/ucan/container"
@@ -62,11 +61,12 @@ func init() {
 }
 
 func mkDelegation(cmd *cobra.Command, _ []string) error {
-	issuer, err := readAndDecodeIssuerKey(issuerPrivateKeyFile)
+	signer, err := readAndDecodeIssuerKey(issuerPrivateKeyFile)
 	if err != nil {
 		return fmt.Errorf("parsing issuer private key from file %s: %w", issuerPrivateKeyFile, err)
 	}
 
+	issuer := multikey.KeyIssuer(signer)
 	if issuerDidWeb != "" {
 		issuerDidWeb, err := did.Parse(issuerDidWeb)
 		if err != nil {
@@ -75,10 +75,7 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		if issuerDidWeb.Method() != "web" {
 			return fmt.Errorf("issuer DID must start with 'did:web:'")
 		}
-		issuer, err = signer.Wrap(issuer, issuerDidWeb)
-		if err != nil {
-			return fmt.Errorf("wrapping issuer: %w", err)
-		}
+		issuer = multikey.NewIssuer(issuerDidWeb, signer)
 	}
 
 	audience, err := did.Parse(audienceStr)
@@ -137,8 +134,8 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("formatting delegation: %w", err)
 		}
-		fmt.Println(string(out))
-		return nil
+		_, err = cmd.OutOrStdout().Write(out)
+		return err
 	}
 
 	if containerCodecStr == "" {
@@ -167,16 +164,24 @@ func mkDelegation(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("encoding container: %w", err)
 	}
-	fmt.Println(string(out))
-	return nil
+	if codec == container.Raw || codec == container.RawGzip {
+		// binary output, no trailing newline
+		_, err = cmd.OutOrStdout().Write(out)
+		return err
+	}
+	// Write to stdout (cmd.Println goes to stderr) so redirected/pipelined
+	// callers capture the encoded container, matching the raw and
+	// single-delegation branches above.
+	_, err = fmt.Fprintln(cmd.OutOrStdout(), string(out))
+	return err
 }
 
 // readAndDecodeIssuerKey attempts to read and decode the private key from the
 // provided path.
-func readAndDecodeIssuerKey(path string) (principal.Signer, error) {
+func readAndDecodeIssuerKey(path string) (multikey.Signer, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %w", err)
 	}
-	return identity.DecodeEd25519SignerFromPEM(data)
+	return identity.DecodeSignerFromPEM(data)
 }
