@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fil-forge/ucantool/pkg/ipldfmt"
 	"github.com/fil-forge/ucantone/ipld/datamodel"
 	"github.com/fil-forge/ucantone/ucan"
 	ddm "github.com/fil-forge/ucantone/ucan/delegation/datamodel"
+	"github.com/fil-forge/ucantool/pkg/ipldfmt"
 	"github.com/ipfs/go-cid"
 	"github.com/olekukonko/tablewriter"
 )
