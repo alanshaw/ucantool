@@ -6,13 +6,13 @@ require (
 	github.com/alanshaw/dag-json-gen v0.0.8
 	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/fil-forge/ucantone v0.0.0-20260706102443-79141c5cc52e
-	github.com/ipfs/go-cid v0.6.1
+	github.com/ipfs/go-cid v0.6.2
 	github.com/multiformats/go-multicodec v0.10.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.11.1
 	github.com/whyrusleeping/cbor-gen v0.3.1
-	golang.org/x/term v0.42.0
+	golang.org/x/term v0.44.0
 )
 
 require (
@@ -36,8 +36,8 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 	gitlab.com/yawning/secp256k1-voi v0.0.0-20230925100816-f2616030848b // indirect
 	gitlab.com/yawning/tuplehash v0.0.0-20230713102510-df83abbf9a02 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.4.1 // indirect
