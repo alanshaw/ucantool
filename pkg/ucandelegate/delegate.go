@@ -84,12 +84,12 @@ func (r Result) IsText() bool {
 // WriteTo writes the encoded delegations to w, terminating printable text with
 // a newline and writing binary output bare.
 func (r Result) WriteTo(w io.Writer) (int64, error) {
-	if r.IsText() {
-		n, err := fmt.Fprintln(w, string(r.Bytes))
+	n, err := w.Write(r.Bytes)
+	if err != nil || !r.IsText() {
 		return int64(n), err
 	}
-	n, err := w.Write(r.Bytes)
-	return int64(n), err
+	nl, err := w.Write([]byte{'\n'})
+	return int64(n + nl), err
 }
 
 // IssueFromPEM issues the delegations described by req, signed with the private
