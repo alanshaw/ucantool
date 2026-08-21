@@ -15,5 +15,5 @@ Specifically for generating and managing Ed25519 keys used in DID (Decentralized
 
 func init() {
 	Cmd.AddCommand(generateCmd)
-	Cmd.AddCommand(decodeCmd)
+	Cmd.AddCommand(inspectCmd)
 }

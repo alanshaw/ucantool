@@ -9,17 +9,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var decodeCmd = &cobra.Command{
-	Use:          "decode [pem-file]",
+var inspectCmd = &cobra.Command{
+	Use:          "inspect [pem-file]",
 	Args:         cobra.MaximumNArgs(1),
-	Short:        "decode a PEM-encoded key and print its DID",
+	Short:        "inspect a PEM-encoded key and print its DID",
 	SilenceUsage: true,
-	Long: `Decode an existing PEM-encoded Ed25519 private key and print its DID.
+	Long: `Inspect an existing PEM-encoded Ed25519 private key and print its DID.
 The key is read from the given file, or from stdin when no file (or "-") is given.
 The DID is printed to stdout; a key that cannot be decoded is reported as an error.
 `,
-	Example: `  ucantool identity decode my-key.pem
-  ucantool identity decode < my-key.pem`,
+	Example: `  ucantool identity inspect my-key.pem
+  ucantool identity inspect < my-key.pem`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		signer, err := decodeSigner(cmd, args)
 		if err != nil {

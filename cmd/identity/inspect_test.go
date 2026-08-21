@@ -13,16 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// execDecode runs the decode command with the given stdin and returns what it wrote
+// execInspect runs the inspect command with the given stdin and returns what it wrote
 // to stdout.
-func execDecode(t *testing.T, stdin []byte, args ...string) (string, error) {
+func execInspect(t *testing.T, stdin []byte, args ...string) (string, error) {
 	t.Helper()
 
 	var stdout, stderr bytes.Buffer
 	Cmd.SetIn(bytes.NewReader(stdin))
 	Cmd.SetOut(&stdout)
 	Cmd.SetErr(&stderr)
-	Cmd.SetArgs(append([]string{"decode"}, args...))
+	Cmd.SetArgs(append([]string{"inspect"}, args...))
 	err := Cmd.Execute()
 	return stdout.String(), err
 }
@@ -41,45 +41,45 @@ func writeKey(t *testing.T) (multikey.Signer, string, []byte) {
 	return signer, path, pemData
 }
 
-func TestDecodeCmd(t *testing.T) {
+func TestInspectCmd(t *testing.T) {
 	signer, path, pemData := writeKey(t)
 	want := signer.KeyDID().String() + "\n"
 
-	t.Run("decodes a PEM file and prints its DID", func(t *testing.T) {
-		stdout, err := execDecode(t, nil, path)
+	t.Run("prints the DID of a key in a PEM file", func(t *testing.T) {
+		stdout, err := execInspect(t, nil, path)
 		require.NoError(t, err)
 		require.Equal(t, want, stdout)
 	})
 
-	t.Run("decodes a key from stdin", func(t *testing.T) {
-		stdout, err := execDecode(t, pemData)
+	t.Run("prints the DID of a key from stdin", func(t *testing.T) {
+		stdout, err := execInspect(t, pemData)
 		require.NoError(t, err)
 		require.Equal(t, want, stdout)
 	})
 
-	t.Run("decodes a key from stdin with dash argument", func(t *testing.T) {
-		stdout, err := execDecode(t, pemData, "-")
+	t.Run("prints the DID of a key from stdin with dash argument", func(t *testing.T) {
+		stdout, err := execInspect(t, pemData, "-")
 		require.NoError(t, err)
 		require.Equal(t, want, stdout)
 	})
 
 	t.Run("fails on a missing file", func(t *testing.T) {
-		_, err := execDecode(t, nil, filepath.Join(t.TempDir(), "missing.pem"))
+		_, err := execInspect(t, nil, filepath.Join(t.TempDir(), "missing.pem"))
 		require.ErrorContains(t, err, "loading signer from PEM file")
 	})
 
 	t.Run("fails on invalid PEM from stdin", func(t *testing.T) {
-		_, err := execDecode(t, []byte("not a pem"))
+		_, err := execInspect(t, []byte("not a pem"))
 		require.ErrorContains(t, err, "decoding signer from PEM")
 	})
 }
 
-// TestDecodeCmdWritesDIDToStdout guards the DID landing on the process's real
+// TestInspectCmdWritesDIDToStdout guards the DID landing on the process's real
 // stdout rather than stderr. It leaves the command's output writer unset and
 // swaps the actual os.Stdout/os.Stderr files, because cobra's cmd.Print helpers
 // fall back to os.Stderr directly and would otherwise escape a SetErr buffer.
 // Callers capture the DID in a shell substitution, which only sees stdout.
-func TestDecodeCmdWritesDIDToStdout(t *testing.T) {
+func TestInspectCmdWritesDIDToStdout(t *testing.T) {
 	signer, path, _ := writeKey(t)
 
 	outR, outW, err := os.Pipe()
@@ -99,7 +99,7 @@ func TestDecodeCmdWritesDIDToStdout(t *testing.T) {
 	Cmd.SetOut(nil)
 	Cmd.SetErr(nil)
 	Cmd.SetIn(bytes.NewReader(nil))
-	Cmd.SetArgs([]string{"decode", path})
+	Cmd.SetArgs([]string{"inspect", path})
 	require.NoError(t, Cmd.Execute())
 
 	require.NoError(t, outW.Close())
