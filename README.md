@@ -4,8 +4,22 @@ A tool for working with UCAN 1.0 tokens.
 
 ## Install
 
+### Pre-built binaries
+
+Download an archive for your platform from the [latest release](https://github.com/fil-forge/ucantool/releases/latest),
+then extract the `ucantool` binary onto your `PATH`. Archives are named
+`ucantool_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows) and cover Linux, macOS
+and Windows on both `amd64` and `arm64`. Each release also publishes a
+`ucantool_<version>_checksums.txt` with SHA-256 checksums:
+
 ```sh
-go install github.com/fil-forge/ucantool
+sha256sum --check --ignore-missing ucantool_<version>_checksums.txt
+```
+
+### From source
+
+```sh
+go install github.com/fil-forge/ucantool@latest
 ```
 
 ## Usage
