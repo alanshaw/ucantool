@@ -56,6 +56,18 @@ Generate a new PEM-encoded Ed25519 key pair for use with decentralized identitie
 ucantool identity generate
 ```
 
+### `ucantool identity inspect`
+
+Inspect an existing PEM-encoded Ed25519 private key and print its DID. The key is read from the given file, or from stdin when no file (or `-`) is given. This is useful for recovering the DID of a key you already have, for example to make provisioning scripts idempotent.
+
+```sh
+ucantool identity inspect my-key.pem
+```
+
+```sh
+ucantool identity inspect < my-key.pem
+```
+
 ### `ucantool view`
 
 Decode and display information about a UCAN from a file or stdin.
