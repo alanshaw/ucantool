@@ -9,10 +9,9 @@ import (
 	"github.com/fil-forge/ucantone/ucan/delegation"
 	"github.com/fil-forge/ucantone/ucan/invocation"
 	"github.com/fil-forge/ucantone/ucan/receipt"
+	"github.com/fil-forge/ucantool/pkg/ucanfmt"
 	"github.com/spf13/cobra"
 )
-
-const defaultContainerCodec = "base64+gzip"
 
 var packCmd = &cobra.Command{
 	Use:   "pack <path|container> [path|container...]",
@@ -31,11 +30,11 @@ var (
 )
 
 func init() {
-	packCmd.Flags().StringVarP(&packCodecStr, "codec", "o", defaultContainerCodec, "UCAN container codec (e.g. 'raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip')")
+	packCmd.Flags().StringVarP(&packCodecStr, "codec", "o", ucanfmt.DefaultContainerCodec, "UCAN container codec (e.g. 'raw', 'base64', 'base64url', 'raw+gzip', 'base64+gzip' or 'base64url+gzip')")
 }
 
 func pack(cmd *cobra.Command, args []string) error {
-	codec, err := parseCodec(packCodecStr)
+	codec, err := ucanfmt.ParseCodec(packCodecStr)
 	if err != nil {
 		return err
 	}
@@ -98,30 +97,11 @@ func pack(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("encoding container: %w", err)
 	}
 
-	if codec == container.Raw || codec == container.RawGzip {
+	if !ucanfmt.IsTextualCodec(codec) {
 		// binary output, no trailing newline
 		_, err = cmd.OutOrStdout().Write(out)
 		return err
 	}
 	_, err = fmt.Fprintln(cmd.OutOrStdout(), string(out))
 	return err
-}
-
-func parseCodec(s string) (byte, error) {
-	switch s {
-	case "raw":
-		return container.Raw, nil
-	case "base64":
-		return container.Base64, nil
-	case "base64url":
-		return container.Base64url, nil
-	case "raw+gzip":
-		return container.RawGzip, nil
-	case "base64+gzip":
-		return container.Base64Gzip, nil
-	case "base64url+gzip":
-		return container.Base64urlGzip, nil
-	default:
-		return 0, fmt.Errorf("invalid container codec: %q", s)
-	}
 }

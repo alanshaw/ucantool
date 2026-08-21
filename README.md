@@ -74,6 +74,34 @@ ucantool view container.bin --json
 {"ctn-v1":[{"/":{"bytes":"glhAR66mRiQ8FKsCM4aoM9sdLs+HYkG6GTTyqGl0XAE9nr9PGgFtg2gLimfiYFjoD90bBEeqG6P6AMWnUwvolA0MD6JhaEg0Ae0B7QETcXN1Y2FuL2RsZ0AxLjAuMC1yYy4xp2NhdWR4OGRpZDprZXk6ejZNa3M3UHhxVGVCNmhWQWllYWZoRGtlYVVKYWpEQTVyQ01qWHYxUVEyc1NxbWo1Y2NtZHAvZnJ1aXRzL3B1cmNoYXNlY2V4cBppHF6WY2lzc3RkaWQ6d2ViOmZydWl0Lm1hcmtldGNwb2yBg2NhbGxnLmZydWl0c4Jib3KDg2I9PWEuZWFwcGxlg2I9PWEuZm9yYW5nZYNiPT1hLmZiYW5hbmFjc3VidGRpZDp3ZWI6ZnJ1aXQubWFya2V0ZW5vbmNlUKn5t5tUI9ePips/9FYLOww"}},{"/":{"bytes":"glhAckRmUKVOqWffQV+++DJMLSqHTk/wCDqWsMXZpajZ67hX1HMsmNz8OEqaALpzvnaQWqbtoM3JjQ7zTlO8gKLED6JhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqWNhdWR0ZGlkOndlYjpmcnVpdC5tYXJrZXRjY21kdC91Y2FuL2Fzc2VydC9yZWNlaXB0Y2V4cBppHF6WY2lhdBppHF54Y2lzc3RkaWQ6d2ViOmZydWl0Lm1hcmtldGNwcmaAY3N1YnRkaWQ6d2ViOmZydWl0Lm1hcmtldGRhcmdzomNvdXShYm9rGCpjcmFu2CpYJQABcRIgewTVERdle8QnvMiXLq+K8NY5RZEBnvxy8WNXv23scT9lbm9uY2VQjaUQqg4PnK2wOT4VxFw03w"}},{"/":{"bytes":"glhA2uUTIRx6xLliKr+3EUhFgBFpnBP0Zeew9yZ6ma733xiF7vLS1krqa6yZimBxun8DjMlsYHeu18b+NuBvkMlwCaJhaEg0Ae0B7QETcXN1Y2FuL2ludkAxLjAuMC1yYy4xqWNjbWRwL2ZydWl0cy9wdXJjaGFzZWNleHAaaRxelmNpYXQaaRxeeGNpc3N4OGRpZDprZXk6ejZNa3M3UHhxVGVCNmhWQWllYWZoRGtlYVVKYWpEQTVyQ01qWHYxUVEyc1NxbWo1Y3ByZoHYKlglAAFxEiBBbvyIkSr+mDAubWKbg5WKadYbY+ZoN0lRhyyxHf18hWNzdWJ0ZGlkOndlYjpmcnVpdC5tYXJrZXRkYXJnc6FmZnJ1aXRzgmVhcHBsZWZiYW5hbmFkbWV0YaViaWR4OGRpZDprZXk6ejZNa2d5NWUyTHRwcUFTcWZ6MUtUNkc1ZHFiaTV4WVE0V1A0a2kxaXY0WHRuaFlHZGJsb2KhZmRpZ2VzdEMBAgNkbmFtZWR0ZXN0ZHJvb3TYKlglAAFVEiDH0BSJCAhYxQAGWDbGWPhHpspnxIZGGSEr5PggDku6zmRzaXplGQPoZW5vbmNlUC/rE9w/ky0qf8Ha+FwAQPs"}}]}
 ```
 
+## Use as a library
+
+Generating delegations does not require the CLI. `pkg/ucandelegate` issues them
+from a key held in memory, so a caller never has to write a private key to disk.
+
+```go
+import "github.com/fil-forge/ucantool/pkg/ucandelegate"
+
+res, err := ucandelegate.IssueFromPEM(pemData, ucandelegate.Request{
+	Audience:       "did:key:aud",
+	Commands:       []string{"/msg/send"},
+	Expiration:     ucandelegate.ExpiresIn(time.Hour),
+	ContainerCodec: "base64+gzip",
+})
+if err != nil {
+	return err
+}
+
+// res.Bytes holds the encoded delegation. WriteTo terminates printable
+// output with a newline and writes binary output bare, the way the CLI does.
+_, err = res.WriteTo(os.Stdout)
+```
+
+Pass a `Signer` instead of PEM bytes to use `Issue`, and leave `ContainerCodec`
+empty to encode a single delegation as a bare DAG-CBOR block. A nil `Expiration`
+issues a delegation that never expires; `ExpiresAt` takes an absolute
+`time.Time`. `res.IsText()` reports whether the bytes are printable.
+
 ## Screenshots
 
 ### Delegation
