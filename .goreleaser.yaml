@@ -3,70 +3,41 @@ version: 2
 
 project_name: ucantool
 
-before:
-  hooks:
-    - go mod download
-
+# No cgo anywhere in the dependency graph, so every target cross-compiles from
+# a single linux runner.
 builds:
   - id: ucantool
     main: .
     binary: ucantool
-    env:
-      - CGO_ENABLED=0
+    ldflags:
+      # Sets the version variable in the build package to the build version prefixed with a 'v'
+      # Sets the date to the commit date for checksum verification. See https://goreleaser.com/customization/builds/#reproducible-builds.
+      - -s -w -X github.com/fil-forge/ucantool/pkg/build.version=v{{.Version}} -X github.com/fil-forge/ucantool/pkg/build.Commit={{.Commit}} -X github.com/fil-forge/ucantool/pkg/build.Date={{.CommitDate}} -X github.com/fil-forge/ucantool/pkg/build.BuiltBy=goreleaser
     goos:
       - linux
       - darwin
-      - windows
     goarch:
-      - amd64
-      - arm64
-    flags:
-      - -trimpath
-    ldflags:
-      - -s -w -X github.com/fil-forge/ucantool/cmd.version={{ .Version }}
-    mod_timestamp: "{{ .CommitTimestamp }}"
+      - 'amd64'
+      - 'arm64'
+    # Change to a static date for checksum verification. See https://goreleaser.com/customization/builds/#reproducible-builds.
+    mod_timestamp: '{{.CommitTimestamp}}'
+    env:
+      - CGO_ENABLED=0
 
 archives:
-  - id: ucantool
-    # Default `files` globs already pick up LICENSE.md and README.md.
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    formats: [tar.gz]
-    format_overrides:
-      - goos: windows
-        formats: [zip]
+  - format_overrides:
+      - goos: darwin
+        formats: zip
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_
+      {{- if eq .Os "darwin" }}mac_os
+      {{- else }}{{ .Os }}{{ end }}_{{ .Arch }}
 
-checksum:
-  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
-  algorithm: sha256
-
-snapshot:
-  version_template: "{{ incpatch .Version }}-dev"
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^chore"
-      - "^ci"
-      - "^docs"
-      - "^test"
-      - "^style"
-      - "^build"
-      - "Merge pull request"
-      - "Merge branch"
-  groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
-    - title: Bug fixes
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
-      order: 1
-    - title: Performance
-      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
-      order: 2
-    - title: Other changes
-      order: 999
-
+# Releaser has already created the GitHub Release (and its tag); only attach
+# assets to it.
 release:
-  draft: false
-  prerelease: auto
+  mode: keep-existing
+
+# The release notes come from GitHub's generate_release_notes, via Releaser.
+changelog:
+  disable: true

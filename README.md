@@ -7,10 +7,10 @@ A tool for working with UCAN 1.0 tokens.
 ### Pre-built binaries
 
 Download an archive for your platform from the [latest release](https://github.com/fil-forge/ucantool/releases/latest),
-then extract the `ucantool` binary onto your `PATH`. Archives are named
-`ucantool_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows) and cover Linux, macOS
-and Windows on both `amd64` and `arm64`. Each release also publishes a
-`ucantool_<version>_checksums.txt` with SHA-256 checksums:
+then extract the `ucantool` binary onto your `PATH`. Linux archives are named
+`ucantool_<version>_linux_<arch>.tar.gz` and macOS archives
+`ucantool_<version>_mac_os_<arch>.zip`, for both `amd64` and `arm64`. Each release
+also publishes a `ucantool_<version>_checksums.txt` with SHA-256 checksums:
 
 ```sh
 sha256sum --check --ignore-missing ucantool_<version>_checksums.txt
@@ -140,23 +140,33 @@ Feel free to join in. All welcome. Please [open an issue](https://github.com/fil
 
 ## Releasing
 
-Releases are cut by pushing a semver tag to `main`. The
-[release workflow](.github/workflows/release.yml) then uses
-[GoReleaser](https://goreleaser.com) to cross-compile the binaries, attach them
-to a GitHub Release along with a checksums file, and generate release notes from
-the commit log.
+Releases are driven by [`version.json`](version.json), not by pushing tags by
+hand. The tag is created by the automation, so please do not create one yourself.
 
-```sh
-git tag -a v0.1.0 -m "v0.1.0"
-git push origin v0.1.0
-```
+1. Open a pull request against `main` that only bumps `version` in
+   `version.json` (for example `v0.1.0` to `v0.1.1`). Keep code changes in a
+   separate PR — the release checker cannot analyse code that is not yet on
+   `main`.
+2. [Release Checker](.github/workflows/release-check.yml) validates the version
+   is valid semver, reports any Go API changes against the previous release, and
+   creates a **draft** GitHub Release. Edit that draft's body if you want to
+   write the release notes by hand.
+3. Merge the PR. [Releaser](.github/workflows/releaser.yml) publishes the draft,
+   which is what creates the `vX.Y.Z` tag, at the merge commit.
+4. [Binaries Releaser](.github/workflows/release-binaries.yml) then uses
+   [GoReleaser](https://goreleaser.com) to cross-compile Linux and macOS
+   binaries for `amd64` and `arm64` and attach them, with a checksums file, to
+   that release.
 
-Tags with a pre-release suffix (for example `v0.1.0-rc1`) are automatically
-marked as pre-releases. Commit messages follow
-[Conventional Commits](https://www.conventionalcommits.org), which is how the
-release notes are grouped into features, bug fixes and performance changes.
+Versions with a pre-release suffix (for example `v0.1.0-rc1`) are published as
+pre-releases. To cut a release from a branch other than `main`, add the
+`release` label to the pull request.
 
-To check what a release would produce without publishing anything, build a
+If someone does push a `v*` tag by hand,
+[Tag Push Checker](.github/workflows/tagpush.yml) opens an issue asking them to
+use the process above and reconcile `version.json`.
+
+To check what the binaries would look like without publishing anything, build a
 snapshot locally into `dist/`:
 
 ```sh

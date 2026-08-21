@@ -1,0 +1,50 @@
+name: Binaries Releaser
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+  workflow_run:
+    # Must match the `name:` of releaser.yml. Releaser publishes the release with
+    # GITHUB_TOKEN, which emits no tag-push or release event, so we cannot listen
+    # for those and have to watch the workflow itself instead.
+    workflows: [Releaser]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  # A release published with a PAT can fire both `release` and `workflow_run`.
+  # Queue rather than cancel, so an in-flight asset upload is never interrupted.
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  bin-releaser:
+    name: Release Binaries
+    # Releaser runs on every version.json push, including ones that cut no
+    # release; only build when it actually succeeded.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # No cgo anywhere in the dependency graph, so linux and darwin both
+    # cross-compile from here.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Pin to the commit Releaser tagged; the default ref would drift if
+          # another commit landed on main in the meantime.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || '' }}
+          fetch-depth: 0 # goreleaser needs the tags to resolve the version
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Release Binaries
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
