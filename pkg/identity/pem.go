@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"os"
 
 	"github.com/fil-forge/ucantone/multikey"
 	"github.com/fil-forge/ucantone/multikey/ed25519"
@@ -16,7 +17,7 @@ import (
 func EncodeSignerToPEM(signer multikey.Signer) ([]byte, error) {
 	privateKeyBytes, err := x509.MarshalPKCS8PrivateKey(signer.PrivateKey())
 	if err != nil {
-		return nil, fmt.Errorf("marshaling private key of signer %s: %w", signer, err)
+		return nil, fmt.Errorf("marshaling private key of signer %s: %w", signer.KeyDID(), err)
 	}
 
 	privateKeyBlock := &pem.Block{
@@ -26,10 +27,20 @@ func EncodeSignerToPEM(signer multikey.Signer) ([]byte, error) {
 
 	buffer := new(bytes.Buffer)
 	if err := pem.Encode(buffer, privateKeyBlock); err != nil {
-		return nil, fmt.Errorf("encoding private key of signer %s: %w", signer, err)
+		return nil, fmt.Errorf("encoding private key of signer %s: %w", signer.KeyDID(), err)
 	}
 
 	return buffer.Bytes(), nil
+}
+
+// LoadSignerFromPEMFile reads a PKCS#8 PEM file and decodes the private key it
+// holds as a signer.
+func LoadSignerFromPEMFile(path string) (multikey.Signer, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading file: %w", err)
+	}
+	return DecodeSignerFromPEM(data)
 }
 
 // DecodeSignerFromPEM loads a private key from a PKCS#8 PEM as a signer.
