@@ -18,7 +18,7 @@ var generateCmd = &cobra.Command{
 The command will output the key to stdout, which can be redirected to a file. 
 The DID is printed to stderr for convenience.
 `,
-	Example: "guppy identity generate > my-key.pem",
+	Example: "ucantool identity generate > my-key.pem",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		signer, err := ed25519.Generate()
 		if err != nil {
