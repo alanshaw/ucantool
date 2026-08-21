@@ -138,6 +138,31 @@ issues a delegation that never expires; `ExpiresAt` takes an absolute
 
 Feel free to join in. All welcome. Please [open an issue](https://github.com/fil-forge/ucantool/issues)!
 
+## Releasing
+
+Releases are cut by pushing a semver tag to `main`. The
+[release workflow](.github/workflows/release.yml) then uses
+[GoReleaser](https://goreleaser.com) to cross-compile the binaries, attach them
+to a GitHub Release along with a checksums file, and generate release notes from
+the commit log.
+
+```sh
+git tag -a v0.1.0 -m "v0.1.0"
+git push origin v0.1.0
+```
+
+Tags with a pre-release suffix (for example `v0.1.0-rc1`) are automatically
+marked as pre-releases. Commit messages follow
+[Conventional Commits](https://www.conventionalcommits.org), which is how the
+release notes are grouped into features, bug fixes and performance changes.
+
+To check what a release would produce without publishing anything, build a
+snapshot locally into `dist/`:
+
+```sh
+goreleaser release --snapshot --clean
+```
+
 ## License
 
 Dual-licensed under [MIT OR Apache 2.0](LICENSE.md)
