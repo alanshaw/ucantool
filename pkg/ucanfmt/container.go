@@ -8,19 +8,12 @@ import (
 	"github.com/fil-forge/ucantone/ucan/container"
 	cdm "github.com/fil-forge/ucantone/ucan/container/datamodel"
 	"github.com/ipfs/go-cid"
-	"github.com/olekukonko/tablewriter"
 )
 
 func FormatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel) string {
 	tableString := &strings.Builder{}
 
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Property", "Value"})
-	table.SetAutoWrapText(false)
-	table.SetAutoMergeCells(false)
-	table.SetRowLine(true)
-	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	table.SetColWidth(120)
+	table := newTable(tableString, "Property", "Value")
 
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Codec", fmt.Sprintf("0x%02x (%s)", codec, container.FormatCodec(codec))})
@@ -34,18 +27,12 @@ func FormatContainerAsTable(link cid.Cid, codec byte, model *cdm.ContainerModel)
 	// table.Append([]string{"Data", strings.Join(data, "\n")})
 
 	dataTableString := &strings.Builder{}
-	dataTableWriter := tablewriter.NewWriter(dataTableString)
-	dataTableWriter.SetHeader([]string{"#", "Bytes"})
-	dataTableWriter.SetAutoWrapText(false)
-	dataTableWriter.SetAutoMergeCells(false)
-	dataTableWriter.SetRowLine(true)
-	dataTableWriter.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	dataTableWriter.SetColWidth(120)
+	dataTableWriter := newTable(dataTableString, "#", "Bytes")
 	for i, v := range model.Ctn1 {
 		dataTableWriter.Append([]string{fmt.Sprintf("%d ", i), hex.Dump(v)})
 	}
-	dataTableWriter.Render()
+	renderTable(dataTableWriter)
 	table.Append([]string{"Contents", dataTableString.String()})
-	table.Render()
+	renderTable(table)
 	return tableString.String()
 }

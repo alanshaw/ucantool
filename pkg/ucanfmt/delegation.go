@@ -11,19 +11,12 @@ import (
 	ddm "github.com/fil-forge/ucantone/ucan/delegation/datamodel"
 	"github.com/fil-forge/ucantool/pkg/ipldfmt"
 	"github.com/ipfs/go-cid"
-	"github.com/olekukonko/tablewriter"
 )
 
 func FormatDelegationAsTable(link cid.Cid, dlg ucan.Delegation) string {
 	tableString := &strings.Builder{}
 
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Property", "Value"})
-	table.SetAutoWrapText(false)
-	table.SetAutoMergeCells(false)
-	table.SetRowLine(true)
-	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	table.SetColWidth(120)
+	table := newTable(tableString, "Property", "Value")
 
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Tag", ddm.Tag})
@@ -55,6 +48,6 @@ func FormatDelegationAsTable(link cid.Cid, dlg ucan.Delegation) string {
 	table.Append([]string{"Signature", ipldfmt.FormatDagJsonBytesMaxLen(dlg.Signature().Bytes(), 80)})
 	table.Append([]string{"Nonce", ipldfmt.FormatDagJsonBytesMaxLen(dlg.Nonce(), 80)})
 
-	table.Render()
+	renderTable(table)
 	return tableString.String()
 }

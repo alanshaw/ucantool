@@ -11,19 +11,12 @@ import (
 	idm "github.com/fil-forge/ucantone/ucan/invocation/datamodel"
 	"github.com/fil-forge/ucantool/pkg/ipldfmt"
 	"github.com/ipfs/go-cid"
-	"github.com/olekukonko/tablewriter"
 )
 
 func FormatInvocationAsTable(link cid.Cid, inv ucan.Invocation) string {
 	tableString := &strings.Builder{}
 
-	table := tablewriter.NewWriter(tableString)
-	table.SetHeader([]string{"Property", "Value"})
-	table.SetAutoWrapText(false)
-	table.SetAutoMergeCells(false)
-	table.SetRowLine(true)
-	table.SetColumnAlignment([]int{tablewriter.ALIGN_LEFT, tablewriter.ALIGN_LEFT})
-	table.SetColWidth(120)
+	table := newTable(tableString, "Property", "Value")
 
 	table.Append([]string{"/", link.String()})
 	table.Append([]string{"Tag", idm.Tag})
@@ -74,6 +67,6 @@ func FormatInvocationAsTable(link cid.Cid, inv ucan.Invocation) string {
 	table.Append([]string{"Signature", ipldfmt.FormatDagJsonBytesMaxLen(inv.Signature().Bytes(), 80)})
 	table.Append([]string{"Nonce", ipldfmt.FormatDagJsonBytesMaxLen(inv.Nonce(), 80)})
 
-	table.Render()
+	renderTable(table)
 	return tableString.String()
 }
