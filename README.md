@@ -13,7 +13,11 @@ then extract the `ucantool` binary onto your `PATH`. Linux archives are named
 also publishes a `ucantool_<version>_checksums.txt` with SHA-256 checksums:
 
 ```sh
+# Linux
 sha256sum --check --ignore-missing ucantool_<version>_checksums.txt
+
+# macOS (sha256sum is not part of a stock install)
+shasum -a 256 --check --ignore-missing ucantool_<version>_checksums.txt
 ```
 
 ### From source
