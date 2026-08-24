@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/fil-forge/ucantool/pkg/internal/revision"
 )
@@ -31,17 +32,47 @@ const (
 )
 
 func init() {
-	if version == "" {
-		// This is being ran in development, try to grab the latest known version from the version.json file
-		var err error
-		version, err = readVersionFromFile()
-		if err != nil {
-			// Use the default version
-			version = defaultVersion
+	Version = resolveVersion()
+}
+
+// resolveVersion picks the version by how exact the source is. The GoReleaser
+// ldflag carries the tagged release and is reported verbatim; suffixing it
+// with the revision would turn a stable version into a semver prerelease.
+// A `go install module@version` build reports the module version recorded in
+// the build info. A development build from a checkout reports the last known
+// version from version.json, marked with the commit revision.
+func resolveVersion() string {
+	if version != "" {
+		return version
+	}
+	if v := moduleVersion(); v != "" {
+		return v
+	}
+	v, err := readVersionFromFile()
+	if err != nil {
+		v = defaultVersion
+	}
+	return fmt.Sprintf("%s-%s", v, revision.Revision)
+}
+
+// moduleVersion returns the module version recorded by module-cache builds
+// (`go install module@version`). Builds from a source checkout are excluded:
+// they carry VCS settings, and their version is reported from version.json
+// and the revision instead.
+func moduleVersion() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	for _, bs := range bi.Settings {
+		if bs.Key == "vcs.revision" {
+			return ""
 		}
 	}
-
-	Version = fmt.Sprintf("%s-%s", version, revision.Revision)
+	if bi.Main.Version == "" || bi.Main.Version == "(devel)" {
+		return ""
+	}
+	return bi.Main.Version
 }
 
 // versionJSON is used to read the local version.json file
