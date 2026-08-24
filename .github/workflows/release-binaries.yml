@@ -16,8 +16,10 @@ permissions:
 
 concurrency:
   # A release published with a PAT can fire both `release` and `workflow_run`.
-  # Queue rather than cancel, so an in-flight asset upload is never interrupted.
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.ref }}
+  # Key both on the released commit so the two runs share one group (on a
+  # `release` event github.sha is the last commit of the tagged release), and
+  # queue rather than cancel, so an in-flight asset upload is never interrupted.
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
   cancel-in-progress: false
 
 jobs:
