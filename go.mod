@@ -3,7 +3,7 @@ module github.com/fil-forge/ucantool
 go 1.25.0
 
 require (
-	github.com/alanshaw/dag-json-gen v0.0.8
+	github.com/alanshaw/dag-json-gen v0.0.9
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/fil-forge/ucantone v0.0.0-20260706102443-79141c5cc52e
 	github.com/ipfs/go-cid v0.6.2
