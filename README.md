@@ -95,9 +95,29 @@ If you have a UCAN container, you can visualize a specific token by index:
 ucantool view -i 1 container.ucan
 ```
 
+##### Summary of every token
+
+The `--summary` flag decodes every token in the input and reports its command, audience and issuer. A single delegation is summarised the same way as a container.
+
+```sh
+ucantool view --summary proof.txt
++---+-----------------------+---------------------------+--------------------------+
+| # |        COMMAND        |         AUDIENCE          |          ISSUER          |
++---+-----------------------+---------------------------+--------------------------+
+| 0 | /s3/request/authorize | did:web:ingot.dev.example | did:web:hilt.dev.example |
++---+-----------------------+---------------------------+--------------------------+
+```
+
+Adding `--json` writes the summary as JSON, which also carries the subject, expiration and tag of each token. The keys are fixed by this tool rather than taken from the encoded tag, so a script keeps working when UCAN moves past the current spec version. An entry that decodes as no known token kind reports its index and an error, leaving the other entries readable.
+
+```sh
+ucantool view --summary --json proof.txt | jq -r '.[].aud'
+did:web:ingot.dev.example
+```
+
 ##### JSON output
 
-The `--json` flag will output `dag-json` encoding of the input.
+Without `--summary`, the `--json` flag outputs the `dag-json` encoding of the input. For a container that means the container itself, with its entries as opaque bytes.
 
 ```sh
 ucantool view container.bin --json
